@@ -1,4 +1,6 @@
 // src/ai/genkit.ts
+'use server';
+
 import { genkit, flow } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'zod';

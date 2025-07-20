@@ -14,13 +14,15 @@ export type Service = z.infer<typeof ServiceSchema>;
 
 // Schema para a coleção 'barbers'
 export const BarberSchema = z.object({
-    id: z.string().optional(),
-    barbershopId: z.string(),
-    name: z.string(),
-    avatarUrl: z.string().url().optional(),
-    isActive: z.boolean().default(true),
-    // A disponibilidade pode ser mais complexa, mas vamos começar simples
-    availability: z.record(z.string(), z.object({ start: z.string(), end: z.string() })).optional(),
+  id: z.string().optional(),
+  barbershopId: z.string(),
+  name: z.string(),
+  avatarUrl: z.string().url().optional(),
+  isActive: z.boolean().default(true),
+  // A disponibilidade pode ser mais complexa, mas vamos começar simples
+  availability: z
+    .record(z.string(), z.object({ start: z.string(), end: z.string() }))
+    .optional(),
 });
 export type Barber = z.infer<typeof BarberSchema>;
 

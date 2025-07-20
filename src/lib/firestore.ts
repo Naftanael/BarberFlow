@@ -1,6 +1,12 @@
 // src/lib/firestore.ts
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 import { ServiceSchema, Service } from './schemas';
 import { z } from 'zod';
 
@@ -23,17 +29,23 @@ const db = getFirestore(app);
  * @param barbershopId - O ID da barbearia.
  * @returns Uma promessa que resolve para um array de serviços.
  */
-export async function getActiveServices(barbershopId: string): Promise<Service[]> {
+export async function getActiveServices(
+  barbershopId: string
+): Promise<Service[]> {
   if (!barbershopId) {
     throw new Error('O ID da barbearia é obrigatório.');
   }
-  
+
   const servicesRef = collection(db, 'services');
-  const q = query(servicesRef, where('barbershopId', '==', barbershopId), where('isActive', '==', true));
-  
+  const q = query(
+    servicesRef,
+    where('barbershopId', '==', barbershopId),
+    where('isActive', '==', true)
+  );
+
   const querySnapshot = await getDocs(q);
-  
-  const services = querySnapshot.docs.map(doc => ({
+
+  const services = querySnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));

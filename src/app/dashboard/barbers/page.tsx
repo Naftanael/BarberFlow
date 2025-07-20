@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,20 +11,38 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 
 const mockBarbers = [
-  { id: "1", name: "João Silva", status: "Ativo", avatar: "https://placehold.co/128x128.png", hint: "male professional" },
-  { id: "2", name: "Carlos Pereira", status: "Ativo", avatar: "https://placehold.co/128x128.png", hint: "male smiling" },
-  { id: "3", name: "Marcos Andrade", status: "Inativo", avatar: "https://placehold.co/128x128.png", hint: "male serious" },
+  {
+    id: '1',
+    name: 'João Silva',
+    status: 'Ativo',
+    avatar: 'https://placehold.co/128x128.png',
+    hint: 'male professional',
+  },
+  {
+    id: '2',
+    name: 'Carlos Pereira',
+    status: 'Ativo',
+    avatar: 'https://placehold.co/128x128.png',
+    hint: 'male smiling',
+  },
+  {
+    id: '3',
+    name: 'Marcos Andrade',
+    status: 'Inativo',
+    avatar: 'https://placehold.co/128x128.png',
+    hint: 'male serious',
+  },
 ];
 
 export default function BarbersPage() {
@@ -33,34 +51,37 @@ export default function BarbersPage() {
 
   const handleSave = () => {
     toast({
-      title: "Sucesso!",
-      description: "Barbeiro salvo com sucesso.",
+      title: 'Sucesso!',
+      description: 'Barbeiro salvo com sucesso.',
     });
     setIsDialogOpen(false);
   };
-  
+
   const handleEdit = () => {
-     toast({
-      title: "Sucesso!",
-      description: "Informações do barbeiro atualizadas.",
+    toast({
+      title: 'Sucesso!',
+      description: 'Informações do barbeiro atualizadas.',
     });
-  }
+  };
 
   const handleDelete = () => {
-      toast({
-          title: "Sucesso!",
-          description: "Barbeiro deletado com sucesso.",
-          variant: "destructive"
-      })
-  }
-
+    toast({
+      title: 'Sucesso!',
+      description: 'Barbeiro deletado com sucesso.',
+      variant: 'destructive',
+    });
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-            <h1 className="text-4xl font-headline tracking-wider text-foreground">Barbeiros</h1>
-            <p className="text-muted-foreground">Gerencie os perfis dos barbeiros da sua equipe.</p>
+          <h1 className="text-4xl font-headline tracking-wider text-foreground">
+            Barbeiros
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie os perfis dos barbeiros da sua equipe.
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -70,56 +91,115 @@ export default function BarbersPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="font-headline tracking-wider">Adicionar Novo Barbeiro</DialogTitle>
-            <DialogDescription>
-              Preencha os detalhes do novo barbeiro.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right font-headline tracking-wide">Nome</Label>
-              <Input id="name" defaultValue="Novo Barbeiro" className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="picture" className="text-right font-headline tracking-wide">Foto</Label>
-              <Input id="picture" type="file" className="col-span-3 file:text-foreground file:font-headline file:tracking-wide file:border-primary file:bg-primary/20 hover:file:bg-primary/30" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right font-headline tracking-wide">Status</Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Switch id="status" defaultChecked />
-                <Label htmlFor="status">Ativo</Label>
+            <DialogHeader>
+              <DialogTitle className="font-headline tracking-wider">
+                Adicionar Novo Barbeiro
+              </DialogTitle>
+              <DialogDescription>
+                Preencha os detalhes do novo barbeiro.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label
+                  htmlFor="name"
+                  className="text-right font-headline tracking-wide"
+                >
+                  Nome
+                </Label>
+                <Input
+                  id="name"
+                  defaultValue="Novo Barbeiro"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label
+                  htmlFor="picture"
+                  className="text-right font-headline tracking-wide"
+                >
+                  Foto
+                </Label>
+                <Input
+                  id="picture"
+                  type="file"
+                  className="col-span-3 file:text-foreground file:font-headline file:tracking-wide file:border-primary file:bg-primary/20 hover:file:bg-primary/30"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label
+                  htmlFor="status"
+                  className="text-right font-headline tracking-wide"
+                >
+                  Status
+                </Label>
+                <div className="col-span-3 flex items-center space-x-2">
+                  <Switch id="status" defaultChecked />
+                  <Label htmlFor="status">Ativo</Label>
+                </div>
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" className="font-headline tracking-wider" onClick={handleSave}>Salvar Barbeiro</Button>
-          </DialogFooter>
-        </DialogContent>
+            <DialogFooter>
+              <Button
+                type="submit"
+                className="font-headline tracking-wider"
+                onClick={handleSave}
+              >
+                Salvar Barbeiro
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {mockBarbers.map((barber) => (
-          <Card key={barber.id} className="flex flex-col text-center hover:border-primary/50 transition-colors">
+          <Card
+            key={barber.id}
+            className="flex flex-col text-center hover:border-primary/50 transition-colors"
+          >
             <CardHeader className="items-center">
               <Avatar className="h-32 w-32 border-4 border-primary/50">
                 <AvatarImage asChild src={barber.avatar}>
-                    <Image src={barber.avatar} alt={barber.name} width={128} height={128} data-ai-hint={barber.hint} />
+                  <Image
+                    src={barber.avatar}
+                    alt={barber.name}
+                    width={128}
+                    height={128}
+                    data-ai-hint={barber.hint}
+                  />
                 </AvatarImage>
-                <AvatarFallback>{barber.name.substring(0,2)}</AvatarFallback>
+                <AvatarFallback>{barber.name.substring(0, 2)}</AvatarFallback>
               </Avatar>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col items-center justify-center">
-                <CardTitle className="font-headline tracking-wider text-2xl">{barber.name}</CardTitle>
-                <Badge variant={barber.status === 'Ativo' ? 'default' : 'secondary'} className="mt-2">
-                  {barber.status}
-                </Badge>
+              <CardTitle className="font-headline tracking-wider text-2xl">
+                {barber.name}
+              </CardTitle>
+              <Badge
+                variant={barber.status === 'Ativo' ? 'default' : 'secondary'}
+                className="mt-2"
+              >
+                {barber.status}
+              </Badge>
             </CardContent>
             <div className="flex justify-center gap-2 p-4">
-                <Button variant="outline" size="sm" className="font-headline tracking-wide w-full" onClick={handleEdit}>Editar</Button>
-                <Button variant="destructive" size="sm" className="font-headline tracking-wide w-full" onClick={handleDelete}>Deletar</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-headline tracking-wide w-full"
+                onClick={handleEdit}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="font-headline tracking-wide w-full"
+                onClick={handleDelete}
+              >
+                Deletar
+              </Button>
             </div>
           </Card>
         ))}

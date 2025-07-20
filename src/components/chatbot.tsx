@@ -10,17 +10,19 @@ import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 const CHAT_STATE = {
-  GREETING: "GREETING",
-  AWAITING_DETAILS: "AWAITING_DETAILS",
+  AWAITING_NAME: "AWAITING_NAME",
+  AWAITING_PHONE: "AWAITING_PHONE",
   SCHEDULING: "SCHEDULING",
 };
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [chatState, setChatState] = useState(CHAT_STATE.GREETING);
+  const [chatState, setChatState] = useState(CHAT_STATE.AWAITING_NAME);
   const [messages, setMessages] = useState([
-    { from: "bot", text: "Olá! Sou seu assistente BarberFlow. Para iniciar, por favor, me informe seu nome e telefone." },
+    { from: "bot", text: "Olá! Sou seu assistente BarberFlow. Para começar, qual é o seu nome?" },
   ]);
+  const [userName, setUserName] = useState("");
+  const [placeholder, setPlaceholder] = useState("Digite seu nome...");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,11 +56,17 @@ export default function Chatbot() {
             return;
         }
 
-        if (chatState === CHAT_STATE.GREETING) {
-            setMessages(prev => [...prev, { from: "bot", text: `Obrigado, ${text.split(" ")[0]}! Para qual dia e horário você gostaria de agendar?` }]);
-            setChatState(CHAT_STATE.SCHEDULING);
+        if (chatState === CHAT_STATE.AWAITING_NAME) {
+            setUserName(text);
+            setMessages(prev => [...prev, { from: "bot", text: `Obrigado, ${text}! Agora, por favor, me informe seu telefone.` }]);
+            setChatState(CHAT_STATE.AWAITING_PHONE);
+            setPlaceholder("Digite seu telefone...");
+        } else if (chatState === CHAT_STATE.AWAITING_PHONE) {
+             setMessages(prev => [...prev, { from: "bot", text: `Perfeito, ${userName}! Para qual dia e horário você gostaria de agendar?` }]);
+             setChatState(CHAT_STATE.SCHEDULING);
+             setPlaceholder("Ex: Amanhã às 14h");
         } else if (chatState === CHAT_STATE.SCHEDULING) {
-             setMessages(prev => [...prev, { from: "bot", text: "Perfeito! Estou verificando a disponibilidade... Um momento." }]);
+             setMessages(prev => [...prev, { from: "bot", text: "Ok! Estou verificando a disponibilidade... Um momento." }]);
         }
     }, 1000);
   };
@@ -107,7 +115,7 @@ export default function Chatbot() {
         </CardContent>
         <CardFooter className="p-4 border-t">
             <form onSubmit={handleSend} className="flex w-full items-center space-x-2">
-                <Input id="message" placeholder="Digite seu nome e telefone..." className="flex-1" autoComplete="off"/>
+                <Input id="message" placeholder={placeholder} className="flex-1" autoComplete="off"/>
                 <Button type="submit" size="icon">
                     <Send className="h-4 w-4" />
                 </Button>

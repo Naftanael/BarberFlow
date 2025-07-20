@@ -36,8 +36,8 @@ export default function ChatWidget({ startOpen = false, isFloating = true }: Cha
   const [isOpen, setIsOpen] = useState(startOpen);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([initialMessage]);
-  const [conversationState, setConversationState] = useState(ConversationState.ASKING_NAME);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationState, setConversationState] = useState(ConversationState.GREETING);
   const [userData, setUserData] = useState({ name: '', phone: '' });
 
   const { run: runGetServices, data: services, error } = useFlow(getServicesFlow);

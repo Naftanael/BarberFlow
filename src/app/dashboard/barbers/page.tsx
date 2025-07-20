@@ -19,6 +19,7 @@ import { PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 const mockBarbers = [
   { id: "1", name: "João Silva", status: "Ativo", avatar: "https://placehold.co/128x128.png", hint: "male professional" },
@@ -28,6 +29,31 @@ const mockBarbers = [
 
 export default function BarbersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleSave = () => {
+    toast({
+      title: "Sucesso!",
+      description: "Barbeiro salvo com sucesso.",
+    });
+    setIsDialogOpen(false);
+  };
+  
+  const handleEdit = () => {
+     toast({
+      title: "Sucesso!",
+      description: "Informações do barbeiro atualizadas.",
+    });
+  }
+
+  const handleDelete = () => {
+      toast({
+          title: "Sucesso!",
+          description: "Barbeiro deletado com sucesso.",
+          variant: "destructive"
+      })
+  }
+
 
   return (
     <div className="space-y-8">
@@ -68,7 +94,7 @@ export default function BarbersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" className="font-headline tracking-wider">Salvar Barbeiro</Button>
+            <Button type="submit" className="font-headline tracking-wider" onClick={handleSave}>Salvar Barbeiro</Button>
           </DialogFooter>
         </DialogContent>
         </Dialog>
@@ -92,8 +118,8 @@ export default function BarbersPage() {
                 </Badge>
             </CardContent>
             <div className="flex justify-center gap-2 p-4">
-                <Button variant="outline" size="sm" className="font-headline tracking-wide w-full">Editar</Button>
-                <Button variant="destructive" size="sm" className="font-headline tracking-wide w-full">Deletar</Button>
+                <Button variant="outline" size="sm" className="font-headline tracking-wide w-full" onClick={handleEdit}>Editar</Button>
+                <Button variant="destructive" size="sm" className="font-headline tracking-wide w-full" onClick={handleDelete}>Deletar</Button>
             </div>
           </Card>
         ))}

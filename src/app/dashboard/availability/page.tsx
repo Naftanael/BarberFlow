@@ -7,10 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const daysOfWeek = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
 export default function AvailabilityPage() {
+    const { toast } = useToast();
+
+    const handleSave = () => {
+        toast({
+            title: "Sucesso!",
+            description: "Disponibilidade salva com sucesso.",
+        });
+    };
+
     return (
         <div className="space-y-8 max-w-4xl mx-auto">
              <div>
@@ -86,7 +96,7 @@ export default function AvailabilityPage() {
                         </div>
                     </div>
                      <div className="flex justify-end">
-                        <Button className="font-headline tracking-wider text-lg">Salvar Alterações</Button>
+                        <Button className="font-headline tracking-wider text-lg" onClick={handleSave}>Salvar Alterações</Button>
                      </div>
 
                 </CardContent>

@@ -26,6 +26,7 @@ import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 const mockServices = [
   { id: "1", name: "Corte Masculino", duration: 30, price: 50.00, active: true },
@@ -37,6 +38,30 @@ const mockServices = [
 
 export default function ServicesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleSave = () => {
+      toast({
+          title: "Sucesso!",
+          description: "Serviço salvo com sucesso.",
+      });
+      setIsDialogOpen(false);
+  };
+
+  const handleEdit = () => {
+      toast({
+          title: "Sucesso!",
+          description: "Serviço atualizado com sucesso."
+      })
+  }
+
+  const handleDelete = () => {
+      toast({
+          title: "Sucesso!",
+          description: "Serviço deletado com sucesso.",
+          variant: "destructive"
+      })
+  }
   
   return (
     <div className="space-y-8">
@@ -81,7 +106,7 @@ export default function ServicesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="font-headline tracking-wider">Salvar serviço</Button>
+              <Button type="submit" className="font-headline tracking-wider" onClick={handleSave}>Salvar serviço</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -122,8 +147,8 @@ export default function ServicesPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                <DropdownMenuItem>Editar</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">Deletar</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleEdit}>Editar</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onClick={handleDelete}>Deletar</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>

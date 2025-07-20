@@ -36,7 +36,18 @@ export default function Chatbot() {
     input.value = "";
     
     setTimeout(() => {
-        setMessages(prev => [...prev, { from: "bot", text: "Claro! Para qual dia e horário gostaria de agendar?" }]);
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 = Domingo, 6 = Sábado
+        const hour = now.getHours();
+
+        const isWeekendClosed = dayOfWeek === 0; // Fechado no Domingo
+        const isOutsideHours = hour < 9 || hour >= 18;
+
+        if (isWeekendClosed || isOutsideHours) {
+            setMessages(prev => [...prev, { from: "bot", text: "No momento, a barbearia está fechada. Nosso horário de funcionamento é de segunda a sábado, das 9h às 18h. Por favor, entre em contato durante esse período." }]);
+        } else {
+            setMessages(prev => [...prev, { from: "bot", text: "Claro! Para qual dia e horário gostaria de agendar?" }]);
+        }
     }, 1000);
   };
 

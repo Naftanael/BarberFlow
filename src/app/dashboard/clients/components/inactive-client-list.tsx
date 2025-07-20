@@ -9,36 +9,55 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
-const clients = [
+const allClients = [
   {
     name: 'João da Silva',
     phone: '(11) 98765-4321',
     status: 'active',
-    lastAppointment: new Date(2024, 4, 15), // Mês 4 = Maio
+    lastAppointment: new Date(2024, 4, 15), // Maio
   },
   {
     name: 'Maria Oliveira',
     phone: '(21) 91234-5678',
     status: 'active',
-    lastAppointment: new Date(2024, 4, 18), // Mês 4 = Maio
+    lastAppointment: new Date(2024, 4, 18), // Maio
   },
   {
     name: 'Carlos Pereira',
     phone: '(31) 99999-8888',
     status: 'inactive',
-    lastAppointment: new Date(2024, 2, 5), // Mês 2 = Março
+    lastAppointment: new Date(2024, 2, 5), // Março
   },
   {
     name: 'Ana Costa',
     phone: '(41) 98888-7777',
     status: 'active',
-    lastAppointment: new Date(2024, 4, 20), // Mês 4 = Maio
+    lastAppointment: new Date(2024, 4, 20), // Maio
+  },
+  {
+    name: 'Pedro Martins',
+    phone: '(51) 97777-6666',
+    status: 'inactive',
+    lastAppointment: new Date(2024, 0, 10), // Janeiro
   },
 ];
 
-export default function ClientList() {
+export default function InactiveClientList() {
+  const thirtyDaysAgo = subDays(new Date(), 30);
+  const inactiveClients = allClients.filter(
+    (client) => client.lastAppointment < thirtyDaysAgo
+  );
+
+  if (inactiveClients.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Nenhum cliente inativo no momento.
+      </p>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -50,7 +69,7 @@ export default function ClientList() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {clients.map((client) => (
+        {inactiveClients.map((client) => (
           <TableRow key={client.phone}>
             <TableCell>{client.name}</TableCell>
             <TableCell>{client.phone}</TableCell>

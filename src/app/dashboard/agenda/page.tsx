@@ -1,173 +1,155 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, MoreVertical } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
-const timeSlots = Array.from(
-  { length: 13 },
-  (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`
-);
-
+// --- DADOS MOCADOS ---
 const mockAppointments = [
-  {
-    id: 1,
-    time: '09:00',
-    duration: 60,
-    barber: 'João Silva',
-    client: 'Ricardo',
-    service: 'Corte e Barba',
-    status: 'Agendado',
-  },
-  {
-    id: 2,
-    time: '10:00',
-    duration: 30,
-    barber: 'Carlos Pereira',
-    client: 'Fernando',
-    service: 'Corte',
-    status: 'Agendado',
-  },
-  {
-    id: 3,
-    time: '11:30',
-    duration: 30,
-    barber: 'João Silva',
-    client: 'Ana',
-    service: 'Corte',
-    status: 'Concluído',
-  },
-  {
-    id: 4,
-    time: '14:00',
-    duration: 90,
-    barber: 'Carlos Pereira',
-    client: 'Mariana',
-    service: 'Hidratação',
-    status: 'Agendado',
-  },
+  { id: 1, startTime: '09:00', duration: 60, barber: 'João Silva', client: 'Ricardo', service: 'Corte e Barba', status: 'Agendado' },
+  { id: 2, startTime: '10:00', duration: 30, barber: 'Carlos Pereira', client: 'Fernando', service: 'Corte', status: 'Agendado' },
+  { id: 3, startTime: '11:30', duration: 30, barber: 'João Silva', client: 'Ana', service: 'Corte', status: 'Concluído' },
+  { id: 4, startTime: '14:00', duration: 90, barber: 'Carlos Pereira', client: 'Mariana', service: 'Hidratação', status: 'Agendado' },
+  { id: 5, startTime: '15:00', duration: 45, barber: 'João Silva', client: 'Beatriz', service: 'Penteado', status: 'Agendado' },
 ];
 
 const barbers = ['João Silva', 'Carlos Pereira'];
+const timeSlots = Array.from({ length: 13 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`); // 08:00 to 20:00
 
+// --- FUNÇÕES AUXILIARES ---
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// --- COMPONENTE PRINCIPAL ---
 export default function AgendaPage() {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+  // Converte a duração em minutos para o número de slots de 15min que ela ocupa
+  const durationToGridRows = (duration: number) => Math.ceil(duration / 15);
+
+  // Converte a hora de início para a linha de início da grade (1 slot = 15min)
+  const startTimeToGridRow = (startTime: string) => {
+    const minutesFrom8AM = timeToMinutes(startTime) - timeToMinutes('08:00');
+    return Math.floor(minutesFrom8AM / 15) + 2; // +2 porque a grade começa na linha 2
+  };
+  
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-headline tracking-wider text-foreground">
-        Agenda
-      </h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline tracking-wider">Hoje</CardTitle>
-          <CardDescription>Visualização da agenda do dia.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex w-full min-h-[832px]">
-            <div className="w-20 text-right pr-4 font-body">
-              {timeSlots.map((time) => (
-                <div
-                  key={time}
-                  className="h-16 flex items-start justify-end pt-1"
-                >
-                  <span className="text-sm text-muted-foreground">{time}</span>
+      {/* Cabeçalho da Página */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-headline tracking-wider text-foreground">
+            Agenda
+          </h1>
+          <p className="text-muted-foreground">
+            Visualize e gerencie os agendamentos do dia.
+          </p>
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[280px] justify-start text-left font-normal bg-transparent border-copper text-cream hover:bg-copper hover:text-wood-dark font-body">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus locale={ptBR} />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Calendário */}
+      <Card className="bg-[#212121] border-white/10">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_repeat(2,1fr)] gap-x-4">
+            
+            {/* Coluna de Horários */}
+            <div className="row-start-2 text-right">
+              {timeSlots.map(time => (
+                <div key={time} className="h-24 flex items-start justify-end pt-1 pr-4">
+                  <span className="text-sm font-body text-cream/50 -translate-y-2">{time}</span>
                 </div>
               ))}
             </div>
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 relative">
-              {/* Grid Lines */}
-              {timeSlots.map((time) => (
-                <div
-                  key={`grid-${time}`}
-                  className="col-span-1 md:col-span-2 h-16 border-t border-dashed border-border"
-                ></div>
-              ))}
-              <div className="absolute top-0 left-1/2 w-px h-full bg-border border-dashed hidden md:block"></div>
 
-              {/* Headers */}
-              {barbers.map((barber, index) => (
-                <div
-                  key={barber}
-                  className="absolute w-full md:w-1/2 text-center py-2 font-headline tracking-wider text-lg"
-                  style={{ left: `${index * 50}%` }}
-                >
+            {/* Colunas dos Barbeiros */}
+            {barbers.map((barber, barberIndex) => (
+              <div key={barber} className="relative col-start-auto">
+                <div className="text-center py-2 font-headline tracking-wider text-lg text-copper sticky top-0 bg-[#212121] z-10">
                   {barber}
                 </div>
-              ))}
+                
+                {/* Grade de fundo para cada barbeiro */}
+                <div className="relative grid grid-cols-1" style={{ gridTemplateRows: 'repeat(48, 1rem)' }}>
+                  {/* Linhas da grade (48 slots de 15min = 12 horas) */}
+                  {Array.from({ length: 48 }).map((_, i) => (
+                    <div key={i} className="h-4 border-t border-dashed border-white/5"></div>
+                  ))}
 
-              {/* Appointments */}
-              <div className="absolute top-12 w-full h-full">
-                {mockAppointments.map((apt) => {
-                  const barberIndex = barbers.indexOf(apt.barber);
-                  if (barberIndex === -1) return null;
-
-                  const [hour, minute] = apt.time.split(':').map(Number);
-                  const top = (((hour - 8) * 60 + minute) / 60) * 64; // 64px per hour (16 * 4)
-                  const height = (apt.duration / 60) * 64;
-
-                  return (
-                    <div
-                      key={apt.id}
-                      className="absolute w-full md:w-[48%]"
-                      style={{
-                        top: `${top}px`,
-                        height: `${height}px`,
-                        left: `calc(${barberIndex * 50}% + 1%)`,
-                      }}
-                    >
+                  {/* Renderiza os agendamentos para o barbeiro atual */}
+                  {mockAppointments
+                    .filter(apt => apt.barber === barber)
+                    .map(apt => (
                       <div
-                        className={`relative flex flex-col p-2 rounded-lg h-full text-xs shadow-lg overflow-hidden ${apt.status === 'Concluído' ? 'bg-secondary/50 text-muted-foreground' : 'bg-primary/80 text-primary-foreground'}`}
+                        key={apt.id}
+                        className="absolute w-full px-1"
+                        style={{
+                          gridRowStart: startTimeToGridRow(apt.startTime),
+                          gridRowEnd: `span ${durationToGridRows(apt.duration)}`,
+                        }}
                       >
-                        {height < 48 ? (
-                          <div className="flex items-center justify-between w-full">
-                            <span className="font-bold truncate pr-2">
-                              {apt.client} - {apt.service}
-                            </span>
-                            <span className="flex-shrink-0">{apt.time}</span>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="font-bold">{apt.client}</p>
-                            <p>{apt.service}</p>
-                            <p className="mt-auto text-end">{apt.time}</p>
-                          </>
-                        )}
-                        {apt.status !== 'Concluído' && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                <span>Marcar como Concluído</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
+                        <div
+                          className={cn(
+                            'relative flex flex-col p-2 rounded-md h-full text-xs shadow-lg overflow-hidden transition-colors',
+                            apt.status === 'Concluído' 
+                              ? 'bg-zinc-600/50 text-cream/60' 
+                              : 'bg-wood-dark text-cream'
+                          )}
+                        >
+                          <p className="font-bold font-body">{apt.client}</p>
+                          <p className="text-cream/80">{apt.service}</p>
+                          <p className="mt-auto text-end text-xs">{apt.startTime}</p>
+                          
+                          {apt.status !== 'Concluído' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-cream hover:bg-white/10 hover:text-cream">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="bg-wood-dark border-copper text-cream">
+                                <DropdownMenuItem className="focus:bg-copper focus:text-wood-dark">
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  <span>Marcar como Concluído</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))
+                  }
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>

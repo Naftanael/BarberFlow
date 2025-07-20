@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import Chatbot from '@/components/chatbot';
+import ChatWidget from '@/components/chat-widget';
 
 const NavLink = ({
   href,
@@ -101,7 +101,11 @@ export default function DashboardLayout({
             />
           </nav>
           <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-            <NavLink href="#" icon={Settings} tooltip="Configurações" />
+            <NavLink
+              href="/dashboard/settings"
+              icon={Settings}
+              tooltip="Configurações"
+            />
           </nav>
         </aside>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
@@ -165,7 +169,7 @@ export default function DashboardLayout({
                     Disponibilidade
                   </Link>
                   <Link
-                    href="#"
+                    href="/dashboard/settings"
                     className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                   >
                     <Settings className="h-5 w-5" />
@@ -196,7 +200,9 @@ export default function DashboardLayout({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Configurações</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">Configurações</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem>Suporte</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
@@ -209,7 +215,7 @@ export default function DashboardLayout({
             {children}
           </main>
         </div>
-        <Chatbot />
+        <ChatWidget isFloating={true} />
       </div>
     </TooltipProvider>
   );

@@ -6,6 +6,7 @@ import {
   getDocs,
   query,
   where,
+  connectFirestoreEmulator,
 } from 'firebase/firestore';
 import { ServiceSchema, Service } from './schemas';
 import { z } from 'zod';
@@ -24,32 +25,48 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+if (process.env.NODE_ENV === 'development') {
+  connectFirestoreEmulator(db, '127.0.0.1', 8081);
+}
+
+// Funções de exemplo para interagir com o Firestore
+
 /**
- * Busca todos os serviços ativos de uma barbearia específica.
- * @param barbershopId - O ID da barbearia.
- * @returns Uma promessa que resolve para um array de serviços.
+ * Busca todos os serviços de um determinado salão.
+ * @param barberShopId O ID do salão de beleza.
+ * @returns Uma lista de serviços.
  */
-export async function getActiveServices(
-  barbershopId: string
+export async function getServices(
+  barberShopId: string,
 ): Promise<Service[]> {
-  if (!barbershopId) {
-    throw new Error('O ID da barbearia é obrigatório.');
-  }
+  const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
+  const servicesSnapshot = await getDocs(servicesCol);
+  const servicesList = servicesSnapshot.docs.map((doc) => doc.data());
 
-  const servicesRef = collection(db, 'services');
-  const q = query(
-    servicesRef,
-    where('barbershopId', '==', barbershopId),
-    where('isActive', '==', true)
-  );
+  // Valida os dados com Zod
+  return z.array(ServiceSchema).parse(servicesList);
+}
 
+/**
+ * Busca um serviço específico pelo nome.
+ * @param barberShopId O ID do salão de beleza.
+ * @param serviceName O nome do serviço.
+ * @returns O serviço encontrado ou null.
+ */
+export async function getServiceByName(
+  barberShopId: string,
+  serviceName: string,
+): Promise<Service | null> {
+  const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
+  const q = query(servicesCol, where('name', '==', serviceName));
   const querySnapshot = await getDocs(q);
 
-  const services = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  if (querySnapshot.empty) {
+    return null;
+  }
 
-  // Valida os dados do Firestore com nosso schema Zod
-  return z.array(ServiceSchema).parse(services);
+  const serviceData = querySnapshot.docs[0].data();
+  return ServiceSchema.parse(serviceData);
 }
+
+export { db };

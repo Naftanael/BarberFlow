@@ -13,7 +13,10 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { DollarSign, Calendar, Users, Percent } from 'lucide-react';
+import { DollarSign, Calendar, Users, Percent, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
 const chartData = [
   { month: 'Jan', revenue: 1860.5 },
@@ -32,11 +35,53 @@ const chartConfig = {
 };
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+  const [buttonText, setButtonText] = useState('Copiar Link do Chat');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const copyToClipboard = () => {
+    if (!isClient) return;
+    const chatUrl = `${window.location.origin}/agendar`;
+    navigator.clipboard.writeText(chatUrl).then(
+      () => {
+        toast({
+          title: 'Sucesso!',
+          description: 'Link do chatbot copiado para a área de transferência.',
+        });
+        setButtonText('Copiado!');
+        setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
+      },
+      (err) => {
+        toast({
+          title: 'Erro!',
+          description: 'Não foi possível copiar o link.',
+          variant: 'destructive',
+        });
+        console.error('Could not copy text: ', err);
+      }
+    );
+  };
+
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-headline tracking-wider text-foreground">
-        Painel
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-4xl font-headline tracking-wider text-foreground">
+          Painel
+        </h1>
+        <Button
+          onClick={copyToClipboard}
+          disabled={!isClient}
+          variant="outline"
+          className="font-headline tracking-wider"
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          {buttonText}
+        </Button>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

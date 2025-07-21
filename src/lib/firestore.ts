@@ -9,6 +9,8 @@ import {
   Timestamp,
   addDoc,
   getDoc,
+  deleteDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase'; // Importa a instância do DB já inicializada
 import {
@@ -28,14 +30,45 @@ import { z } from 'zod';
 const BARBERSHOP_ID = 'barbershop-1';
 
 // --- FUNÇÕES DE SERVIÇO ---
-export async function getServices(barberShopId: string): Promise<Service[]> {
+export async function getServices(
+  barberShopId: string,
+  includeInactive = false
+): Promise<Service[]> {
   const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
-  const servicesSnapshot = await getDocs(servicesCol);
+  const q = includeInactive
+    ? query(servicesCol)
+    : query(servicesCol, where('isActive', '==', true));
+
+  const servicesSnapshot = await getDocs(q);
   const servicesList = servicesSnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
   return z.array(ServiceSchema).parse(servicesList);
+}
+
+export async function addService(
+  barberShopId: string,
+  serviceData: Omit<Service, 'id'>
+): Promise<string> {
+  const validatedData = ServiceSchema.omit({ id: true }).parse(serviceData);
+  const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
+  const docRef = await addDoc(servicesCol, validatedData);
+  return docRef.id;
+}
+
+export async function updateService(
+  barberShopId: string,
+  serviceId: string,
+  serviceData: Partial<Omit<Service, 'id'>>
+) {
+  const serviceRef = doc(db, 'barbershops', barberShopId, 'services', serviceId);
+  await updateDoc(serviceRef, serviceData);
+}
+
+export async function deleteService(barberShopId: string, serviceId: string) {
+  const serviceRef = doc(db, 'barbershops', barberShopId, 'services', serviceId);
+  await deleteDoc(serviceRef);
 }
 
 // --- FUNÇÕES DE BARBEIRO ---
@@ -147,7 +180,6 @@ export async function checkAvailability(
     'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
     'Quinta-feira', 'Sexta-feira', 'Sábado'
   ];
-  // CORREÇÃO: Usar getDay() que é consistente e independente de fuso horário/locale para o index
   const dayOfWeek = portugueseDaysOfWeek[date.getDay()];
   
   const workDaysLowerCase = barber.availability!.workDays.map(d => d.toLowerCase());

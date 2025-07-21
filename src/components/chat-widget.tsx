@@ -22,7 +22,6 @@ import { ptBR } from 'date-fns/locale';
 const BARBERSHOP_ID = 'barbershop-1';
 const BARBERSHOP_NAME = 'BarberFlow';
 
-// --- DEFINIÇÃO DOS ESTADOS DA CONVERSA ---
 const ConversationState = {
   INITIAL: 'INITIAL',
   SELECTING_SERVICE: 'SELECTING_SERVICE',
@@ -35,22 +34,15 @@ const ConversationState = {
   FINALIZED: 'FINALIZED',
 };
 
-// --- TIPOS ---
-interface ChatWidgetProps {
-  startOpen?: boolean;
-  isFloating?: boolean;
-}
-
 interface AppointmentDetails {
-  service?: Service;
-  barber?: Barber;
-  date?: Date;
-  time?: string;
-  clientName?: string;
-  clientPhone?: string;
+  service: Service;
+  barber: Barber;
+  date: Date;
+  time: string;
+  clientName: string;
+  clientPhone: string;
 }
 
-// --- COMPONENTE PRINCIPAL ---
 export default function ChatWidget({
   startOpen = false,
   isFloating = true,
@@ -62,31 +54,29 @@ export default function ChatWidget({
   const [conversationState, setConversationState] = useState(
     ConversationState.INITIAL
   );
-  const [appointmentDetails, setAppointmentDetails] =
-    useState<AppointmentDetails>({});
+  const appointmentDetailsRef = useRef<Partial<AppointmentDetails>>({});
   const servicesRef = useRef<Service[]>([]);
   const barbersRef = useRef<Barber[]>([]);
 
-  // --- EFEITOS E INICIALIZAÇÃO ---
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      addMessage(
-        'bot',
-        `Olá! Sou o assistente virtual da ${BARBERSHOP_NAME}.`,
-        ['Agendar Horário']
-      );
-    }
-  }, [isOpen, messages]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      servicesRef.current = await getServices(BARBERSHOP_ID);
-      barbersRef.current = await getBarbers(BARBERSHOP_ID);
+    const initializeChat = async () => {
+      if (isOpen && messages.length === 0) {
+        setIsLoading(true);
+        try {
+          servicesRef.current = await getServices(BARBERSHOP_ID);
+          barbersRef.current = await getBarbers(BARBERSHOP_ID);
+          addMessage('bot', `Olá! Sou o assistente virtual da ${BARBERSHOP_NAME}.`, ['Agendar Horário']);
+        } catch (error) {
+          addMessage('bot', 'Desculpe, estou com problemas para iniciar. Tente novamente mais tarde.');
+          setConversationState(ConversationState.FINALIZED);
+        } finally {
+          setIsLoading(false);
+        }
+      }
     };
-    fetchData();
-  }, []);
+    initializeChat();
+  }, [isOpen, messages.length]);
 
-  // --- FUNÇÕES AUXILIARES ---
   const addMessage = (
     sender: 'user' | 'bot',
     text: string,
@@ -100,9 +90,10 @@ export default function ChatWidget({
 
   const clearLastOptions = () => {
     setMessages((prev) => {
-      if (prev.length === 0 || !prev[prev.length - 1].options) return prev;
       const newMessages = [...prev];
-      delete newMessages[newMessages.length - 1].options;
+      if (newMessages.length > 0) {
+        delete newMessages[newMessages.length - 1].options;
+      }
       return newMessages;
     });
   };
@@ -123,11 +114,9 @@ export default function ChatWidget({
     setConversationState(ConversationState.SELECTING_DATE);
   };
 
-  // --- MÁQUINA DE ESTADOS PRINCIPAL ---
   const handleUserInput = (input: string) => {
     clearLastOptions();
     addMessage('user', input);
-
     setIsTyping(true);
     setTimeout(() => {
       processNextStep(input);
@@ -140,11 +129,7 @@ export default function ChatWidget({
       case ConversationState.INITIAL:
         if (input === 'Agendar Horário') {
           const serviceNames = servicesRef.current.map((s) => s.name);
-          addMessage(
-            'bot',
-            'Ótimo! Qual serviço você gostaria de agendar?',
-            serviceNames
-          );
+          addMessage('bot', 'Qual serviço você gostaria de agendar?', serviceNames);
           setConversationState(ConversationState.SELECTING_SERVICE);
         }
         break;
@@ -152,15 +137,9 @@ export default function ChatWidget({
       case ConversationState.SELECTING_SERVICE: {
         const selectedService = servicesRef.current.find((s) => s.name === input);
         if (selectedService) {
-          setAppointmentDetails({ service: selectedService });
-          const barberNames = barbersRef.current
-            .filter((b) => b.isActive)
-            .map((b) => b.name);
-          addMessage(
-            'bot',
-            'Com qual barbeiro você gostaria de agendar?',
-            barberNames
-          );
+          appointmentDetailsRef.current = { service: selectedService };
+          const barberNames = barbersRef.current.filter((b) => b.isActive).map((b) => b.name);
+          addMessage('bot', 'Com qual barbeiro?', barberNames);
           setConversationState(ConversationState.SELECTING_BARBER);
         }
         break;
@@ -169,37 +148,34 @@ export default function ChatWidget({
       case ConversationState.SELECTING_BARBER: {
         const selectedBarber = barbersRef.current.find((b) => b.name === input);
         if (selectedBarber) {
-          setAppointmentDetails((prev) => ({ ...prev, barber: selectedBarber }));
-          restartDateSelection();
+          if (selectedBarber.availability) {
+            appointmentDetailsRef.current.barber = selectedBarber;
+            restartDateSelection();
+          } else {
+            addMessage('bot', `Desculpe, ${selectedBarber.name} ainda não configurou seus horários.`);
+            const barberNames = barbersRef.current.filter((b) => b.isActive).map((b) => b.name);
+            addMessage('bot', 'Por favor, escolha outro barbeiro.', barberNames);
+            setConversationState(ConversationState.SELECTING_BARBER);
+          }
         }
         break;
       }
 
       case ConversationState.SELECTING_DATE: {
-        const selectedDate = new Date(`${input}T12:00:00`);
-        setAppointmentDetails((prev) => ({ ...prev, date: selectedDate }));
-        addMessage('bot', 'Verificando horários disponíveis...');
+        // CORREÇÃO: Garante que a data seja interpretada no fuso horário local
+        const [year, month, day] = input.split('-').map(Number);
+        const selectedDate = new Date(year, month - 1, day);
+
+        appointmentDetailsRef.current.date = selectedDate;
+        addMessage('bot', 'Verificando horários...');
         setIsLoading(true);
 
         try {
-          const { service, barber } = appointmentDetails;
-          if (!service?.id || !barber?.id) {
-            throw new Error("Serviço ou barbeiro não selecionado.");
-          }
-
-          const availableTimes = await checkAvailability(
-            BARBERSHOP_ID,
-            service.id,
-            barber.id,
-            selectedDate
-          );
-
+          const { service, barber } = appointmentDetailsRef.current;
+          const availableTimes = await checkAvailability(BARBERSHOP_ID, service!.id!, barber!.id!, selectedDate);
+          
           if (availableTimes.length > 0) {
-            addMessage(
-              'bot',
-              `Encontrei os seguintes horários para ${format(selectedDate, 'dd/MM')}:`,
-              availableTimes
-            );
+            addMessage('bot', `Encontrei estes horários para ${format(selectedDate, 'dd/MM')}:`, availableTimes);
             setConversationState(ConversationState.SELECTING_TIME);
           } else {
             addMessage('bot', 'Desculpe, não há horários disponíveis para esta data.');
@@ -207,7 +183,7 @@ export default function ChatWidget({
           }
         } catch (error) {
           console.error("Erro ao verificar disponibilidade:", error);
-          addMessage('bot', 'Desculpe, ocorreu um erro ao verificar os horários. Por favor, reinicie a conversa.');
+          addMessage('bot', 'Desculpe, ocorreu um erro. Por favor, reinicie a conversa.');
           setConversationState(ConversationState.FINALIZED);
         } finally {
           setIsLoading(false);
@@ -215,33 +191,29 @@ export default function ChatWidget({
         break;
       }
 
-      case ConversationState.SELECTING_TIME: {
-        setAppointmentDetails((prev) => ({ ...prev, time: input }));
-        addMessage('bot', 'Para finalizar, qual é o seu nome completo?');
+      case ConversationState.SELECTING_TIME:
+        appointmentDetailsRef.current.time = input;
+        addMessage('bot', 'Qual é o seu nome?');
         setConversationState(ConversationState.ASKING_NAME);
         break;
-      }
 
-      case ConversationState.ASKING_NAME: {
-        setAppointmentDetails((prev) => ({ ...prev, clientName: input }));
-        addMessage('bot', 'E qual é o seu número de telefone (com DDD)?');
+      case ConversationState.ASKING_NAME:
+        appointmentDetailsRef.current.clientName = input;
+        addMessage('bot', 'E seu telefone com DDD?');
         setConversationState(ConversationState.ASKING_PHONE);
         break;
-      }
 
       case ConversationState.ASKING_PHONE: {
-        const finalDetails = { ...appointmentDetails, clientPhone: input };
-        setAppointmentDetails(finalDetails);
+        appointmentDetailsRef.current.clientPhone = input;
+        const finalDetails = appointmentDetailsRef.current as AppointmentDetails;
+        const summary = `Serviço: ${finalDetails.service.name}
+Barbeiro: ${finalDetails.barber.name}
+Data: ${format(finalDetails.date, 'dd/MM/yyyy')}
+Hora: ${finalDetails.time}
+Nome: ${finalDetails.clientName}
+Telefone: ${finalDetails.clientPhone}`;
+        addMessage('bot', `Confirme os detalhes:
 
-        const summary = `
-          Serviço: ${finalDetails.service!.name}
-          Barbeiro: ${finalDetails.barber!.name}
-          Data: ${format(finalDetails.date!, 'dd/MM/yyyy')}
-          Hora: ${finalDetails.time}
-          Nome: ${finalDetails.clientName}
-          Telefone: ${finalDetails.clientPhone}
-        `;
-        addMessage('bot', `Por favor, confirme os detalhes:
 ${summary}`, ['Confirmar Agendamento']);
         setConversationState(ConversationState.CONFIRMING_APPOINTMENT);
         break;
@@ -252,25 +224,25 @@ ${summary}`, ['Confirmar Agendamento']);
           addMessage('bot', 'Confirmando sua reserva...');
           setIsLoading(true);
           try {
-            const { service, barber, date, time, clientName, clientPhone } = appointmentDetails;
-            const startTime = new Date(date!);
-            const [hour, minute] = time!.split(':');
+            const { service, barber, date, time, clientName, clientPhone } = appointmentDetailsRef.current as AppointmentDetails;
+            const startTime = new Date(date);
+            const [hour, minute] = time.split(':');
             startTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
-            const endTime = new Date(startTime.getTime() + service!.duration * 60000);
+            const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
             await scheduleAppointment({
               barbershopId: BARBERSHOP_ID,
-              serviceId: service!.id!,
-              barberId: barber!.id!,
-              clientName: clientName!,
-              clientPhone: clientPhone!,
+              serviceId: service.id!,
+              barberId: barber.id!,
+              clientName,
+              clientPhone,
               startTime,
               endTime,
             });
-            addMessage('bot', 'Agendamento confirmado com sucesso! Mal podemos esperar para te ver.');
+            addMessage('bot', 'Agendamento confirmado com sucesso!');
           } catch (error) {
             console.error('Erro ao agendar:', error);
-            addMessage('bot', 'Desculpe, não foi possível confirmar seu agendamento. Por favor, tente novamente.');
+            addMessage('bot', 'Desculpe, não foi possível confirmar seu agendamento.');
           } finally {
             setIsLoading(false);
             setConversationState(ConversationState.FINALIZED);
@@ -283,38 +255,17 @@ ${summary}`, ['Confirmar Agendamento']);
 
   if (!isOpen && isFloating) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90 animate-in fade-in-0 zoom-in-75"
-      >
+      <Button onClick={() => setIsOpen(true)} className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90">
         <Bot className="h-8 w-8 text-primary-foreground" />
       </Button>
     );
   }
 
   return (
-    <div
-      className={cn(
-        'overflow-hidden flex flex-col bg-[#212121]',
-        isFloating
-          ? 'fixed bottom-0 right-0 md:bottom-4 md:right-4 w-full h-full md:w-[380px] md:h-[600px] md:rounded-lg shadow-2xl z-50 animate-in fade-in-50 slide-in-from-bottom-10 duration-300'
-          : 'w-full h-screen'
-      )}
-    >
-      <ChatHeader
-        barbershopName={BARBERSHOP_NAME}
-        onClose={() => isFloating && setIsOpen(false)}
-      />
-      <MessageList
-        messages={messages}
-        isTyping={isTyping}
-        onOptionSelect={handleUserInput}
-      />
-      <ChatInput
-        onSend={handleUserInput}
-        isLoading={isLoading || isTyping}
-        disabled={isLoading || isTyping}
-      />
+    <div className={cn('overflow-hidden flex flex-col bg-[#212121]', isFloating ? 'fixed bottom-0 right-0 md:bottom-4 md:right-4 w-full h-full md:w-[380px] md:h-[600px] md:rounded-lg shadow-2xl z-50' : 'w-full h-screen')}>
+      <ChatHeader barbershopName={BARBERSHOP_NAME} onClose={() => isFloating && setIsOpen(false)} />
+      <MessageList messages={messages} isTyping={isTyping} onOptionSelect={handleUserInput} />
+      <ChatInput onSend={handleUserInput} isLoading={isLoading || isTyping} disabled={isLoading || isTyping} />
     </div>
   );
 }

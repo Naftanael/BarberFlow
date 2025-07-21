@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,6 +21,11 @@ import {
   Tooltip,
 } from 'recharts';
 import { ClientOnly } from '@/components/client-only';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 
 const chartData = [
   { day: 'Segunda', faturamento: 400 },
@@ -31,40 +36,29 @@ const chartData = [
   { day: 'Sábado', faturamento: 900 },
 ];
 
+const chartConfig = {
+  faturamento: {
+    label: 'Faturamento',
+    color: 'hsl(var(--primary))',
+  },
+};
+
 export default function Dashboard() {
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
   const [buttonText, setButtonText] = useState('Copiar Link do Chat');
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const copyToClipboard = () => {
-    if (!isClient) return;
     const chatUrl = `${window.location.origin}/agendar`;
-
-    const fallbackCopy = (text: string) => {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed'; // Avoid scrolling to bottom
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-          toast({
-            title: 'Sucesso!',
-            description:
-              'Link do chatbot copiado para a área de transferência.',
-          });
-          setButtonText('Copiado!');
-          setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
-        } else {
-          throw new Error('Copy command was not successful');
-        }
-      } catch (err) {
+    navigator.clipboard.writeText(chatUrl).then(
+      () => {
+        toast({
+          title: 'Sucesso!',
+          description: 'Link do chatbot copiado para a área de transferência.',
+        });
+        setButtonText('Copiado!');
+        setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
+      },
+      (err) => {
         toast({
           title: 'Erro!',
           description: 'Não foi possível copiar o link.',
@@ -72,27 +66,7 @@ export default function Dashboard() {
         });
         console.error('Could not copy text: ', err);
       }
-      document.body.removeChild(textArea);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(chatUrl).then(
-        () => {
-          toast({
-            title: 'Sucesso!',
-            description:
-              'Link do chatbot copiado para a área de transferência.',
-          });
-          setButtonText('Copiado!');
-          setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
-        },
-        () => {
-          fallbackCopy(chatUrl);
-        }
-      );
-    } else {
-      fallbackCopy(chatUrl);
-    }
+    );
   };
 
   return (
@@ -170,38 +144,34 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `R$${value}`}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'hsl(var(--muted))' }}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                    }}
-                  />
-                  <Bar
-                    dataKey="faturamento"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <BarChart accessibilityLayer data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `R$${value}`}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar
+                  dataKey="faturamento"
+                  fill="var(--color-faturamento)"
+                  radius={4}
+                />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>

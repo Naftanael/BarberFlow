@@ -104,7 +104,12 @@ async function seedDatabase() {
     console.log(`Barbearia com ID "${BARBERSHOP_ID}" criada/atualizada.`);
 
     // 2. Semear Serviços
-    const servicesCollection = collection(db, 'barbershops', BARBERSHOP_ID, 'services');
+    const servicesCollection = collection(
+      db,
+      'barbershops',
+      BARBERSHOP_ID,
+      'services'
+    );
     console.log('Adicionando serviços...');
     for (const service of services) {
       await addDoc(servicesCollection, service);
@@ -112,7 +117,12 @@ async function seedDatabase() {
     console.log(`${services.length} serviços adicionados.`);
 
     // 3. Semear Barbeiros
-    const barbersCollection = collection(db, 'barbershops', BARBERSHOP_ID, 'barbers');
+    const barbersCollection = collection(
+      db,
+      'barbershops',
+      BARBERSHOP_ID,
+      'barbers'
+    );
     console.log('Adicionando barbeiros...');
     for (const barber of barbers) {
       await addDoc(barbersCollection, barber);
@@ -120,7 +130,12 @@ async function seedDatabase() {
     console.log(`${barbers.length} barbeiros adicionados.`);
 
     // 4. Semear Clientes
-    const clientsCollection = collection(db, 'barbershops', BARBERSHOP_ID, 'clients');
+    const clientsCollection = collection(
+      db,
+      'barbershops',
+      BARBERSHOP_ID,
+      'clients'
+    );
     console.log('Adicionando clientes...');
     for (const client of clients) {
       await addDoc(clientsCollection, client);

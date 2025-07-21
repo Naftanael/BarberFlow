@@ -1,23 +1,24 @@
-// src/components/chat/MessageBubble.tsx
+// src/components/chat/message-bubble.tsx
 'use client';
 
 import { cn } from '@/lib/utils';
 import { TypingIndicator } from './typing-indicator';
+import type { ReactNode } from 'react';
 
 interface MessageBubbleProps {
-  from: 'user' | 'bot';
-  text?: string;
+  sender: 'user' | 'bot';
   isTyping?: boolean;
+  children: ReactNode;
 }
 
 export const MessageBubble = ({
-  from,
-  text,
+  sender,
   isTyping = false,
+  children,
 }: MessageBubbleProps) => {
   const bubbleClass = cn(
     'rounded-lg px-4 py-2 text-sm font-body shadow-md max-w-[85%]',
-    from === 'user'
+    sender === 'user'
       ? 'bg-[#333333] text-[#F5F5F5] rounded-br-none ml-auto'
       : 'bg-[#3D2B1F] text-[#F5F5DC] rounded-bl-none mr-auto'
   );
@@ -26,11 +27,11 @@ export const MessageBubble = ({
     <div
       className={cn(
         'flex items-end gap-2',
-        from === 'user' ? 'justify-end' : 'justify-start'
+        sender === 'user' ? 'justify-end' : 'justify-start'
       )}
     >
       <div className={bubbleClass}>
-        {isTyping ? <TypingIndicator /> : <p>{text}</p>}
+        {isTyping ? <TypingIndicator /> : children}
       </div>
     </div>
   );

@@ -1,137 +1,99 @@
-// src/components/ChatWidget.tsx
+// src/components/chat-widget.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatHeader } from './chat/chat-header';
 import { MessageList, Message } from './chat/message-list';
 import { ChatInput } from './chat/chat-input';
 import { cn } from '@/lib/utils';
-import { getBarbers } from '@/lib/firestore';
-import type { Barber } from '@/lib/schemas';
+import {
+  getServices,
+  checkAvailability,
+  scheduleAppointment,
+  getBarbers,
+} from '@/lib/firestore';
+import { Service } from '@/lib/schemas';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const BARBERSHOP_ID = 'barbershop-1';
 const BARBERSHOP_NAME = 'BarberFlow';
 
+// --- DEFINIÇÃO DOS ESTADOS DA CONVERSA ---
 const ConversationState = {
-  GREETING: 'GREETING',
+  INITIAL: 'INITIAL',
+  SELECTING_SERVICE: 'SELECTING_SERVICE',
+  SELECTING_DATE: 'SELECTING_DATE',
+  SELECTING_TIME: 'SELECTING_TIME',
   ASKING_NAME: 'ASKING_NAME',
   ASKING_PHONE: 'ASKING_PHONE',
-  SELECTING_SERVICE: 'SELECTING_SERVICE',
-  CLOSED: 'CLOSED',
+  CONFIRMING_APPOINTMENT: 'CONFIRMING_APPOINTMENT',
+  FINALIZED: 'FINALIZED',
 };
 
-const initialMessage: Message = {
-  from: 'bot',
-  text: `Olá! Sou o assistente virtual da ${BARBERSHOP_NAME}. Para começar, por favor, me diga seu nome.`,
-};
-
-const portugueseDaysOfWeek = [
-  'Domingo',
-  'Segunda-feira',
-  'Terça-feira',
-  'Quarta-feira',
-  'Quinta-feira',
-  'Sexta-feira',
-  'Sábado',
-];
-
+// --- TIPOS ---
 interface ChatWidgetProps {
   startOpen?: boolean;
   isFloating?: boolean;
 }
 
+interface AppointmentDetails {
+  service?: Service;
+  date?: Date;
+  time?: string;
+  clientName?: string;
+  clientPhone?: string;
+}
+
+// --- COMPONENTE PRINCIPAL ---
 export default function ChatWidget({
   startOpen = false,
   isFloating = true,
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(startOpen);
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Começa carregando
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationState, setConversationState] = useState(
-    ConversationState.GREETING
+    ConversationState.INITIAL
   );
+  const [appointmentDetails, setAppointmentDetails] =
+    useState<AppointmentDetails>({});
+  const servicesRef = useRef<Service[]>([]);
+
+  // --- EFEITOS E INICIALIZAÇÃO ---
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      addMessage(
+        'bot',
+        `Olá! Sou o assistente virtual da ${BARBERSHOP_NAME}.`,
+        ['Agendar Horário']
+      );
+    }
+  }, [isOpen, messages.length]);
 
   useEffect(() => {
-    const checkOpeningHours = async () => {
-      try {
-        const barbers = await getBarbers(BARBERSHOP_ID);
-        let isShopOpen = false;
-
-        const now = new Date();
-        const dayOfWeek = portugueseDaysOfWeek[now.getDay()]; // Correctly get day in Portuguese
-        const currentTime = now.getHours() + now.getMinutes() / 60;
-
-        for (const barber of barbers) {
-          if (!barber.availability || !barber.isActive) continue;
-
-          const isWorkingToday = barber.availability.workDays.includes(
-            dayOfWeek
-          );
-          if (!isWorkingToday) continue;
-
-          const { start, end } = barber.availability.workHours;
-          const startTime =
-            parseInt(start.split(':')[0]) + parseInt(start.split(':')[1]) / 60;
-          const endTime =
-            parseInt(end.split(':')[0]) + parseInt(end.split(':')[1]) / 60;
-
-          if (currentTime >= startTime && currentTime < endTime) {
-            // Check for breaks
-            const isInBreak = barber.availability.breaks.some((breakItem) => {
-              const breakStart =
-                parseInt(breakItem.start.split(':')[0]) +
-                parseInt(breakItem.start.split(':')[1]) / 60;
-              const breakEnd =
-                parseInt(breakItem.end.split(':')[0]) +
-                parseInt(breakItem.end.split(':')[1]) / 60;
-              return currentTime >= breakStart && currentTime < breakEnd;
-            });
-
-            if (!isInBreak) {
-              isShopOpen = true;
-              break; // Found an available barber, no need to check others
-            }
-          }
-        }
-
-        if (isShopOpen) {
-          setMessages([initialMessage]);
-          setConversationState(ConversationState.ASKING_NAME);
-        } else {
-          setMessages([
-            {
-              from: 'bot',
-              text: `Olá! No momento, todos os nossos barbeiros estão indisponíveis ou estamos fora do nosso horário de funcionamento.`,
-            },
-          ]);
-          setConversationState(ConversationState.CLOSED);
-        }
-      } catch (error) {
-        console.error('Erro ao verificar horário de funcionamento:', error);
-        setMessages([
-          {
-            from: 'bot',
-            text: 'Desculpe, estou com problemas para verificar nossos horários. Por favor, tente novamente mais tarde.',
-          },
-        ]);
-        setConversationState(ConversationState.CLOSED);
-      } finally {
-        setIsLoading(false);
-      }
+    const fetchServices = async () => {
+      servicesRef.current = await getServices(BARBERSHOP_ID);
     };
-
-    checkOpeningHours();
+    fetchServices();
   }, []);
 
+  // --- FUNÇÕES AUXILIARES ---
   const addMessage = (
-    from: 'user' | 'bot',
+    sender: 'user' | 'bot',
     text: string,
-    options?: string[]
+    options?: React.ReactNode | string[]
   ) => {
-    const newMessage: Message = { from, text, options };
+    const newMessage: Message = {
+      id: crypto.randomUUID(),
+      sender,
+      text,
+      options,
+    };
     setMessages((prev) => [...prev, newMessage]);
   };
 
@@ -144,10 +106,11 @@ export default function ChatWidget({
     });
   };
 
+  // --- MÁQUINA DE ESTADOS PRINCIPAL ---
   const handleUserInput = (input: string) => {
-    if (conversationState === ConversationState.CLOSED) return;
     clearLastOptions();
     addMessage('user', input);
+
     setIsTyping(true);
     setTimeout(() => {
       processNextStep(input);
@@ -155,33 +118,163 @@ export default function ChatWidget({
     }, 1000);
   };
 
-  const processNextStep = (input: string) => {
+  const processNextStep = async (input: string) => {
     switch (conversationState) {
-      case ConversationState.ASKING_NAME:
-        addMessage(
-          'bot',
-          `Obrigado, ${input}! Agora, por favor, me informe seu telefone.`
-        );
-        setConversationState(ConversationState.ASKING_PHONE);
-        break;
-
-      case ConversationState.ASKING_PHONE:
-        addMessage('bot', 'Perfeito! Dados registrados.');
-        setIsLoading(true);
-        setTimeout(() => {
-          setIsLoading(false);
-          const serviceNames = ['Corte', 'Barba', 'Corte e Barba'];
+      case ConversationState.INITIAL: {
+        if (input === 'Agendar Horário') {
+          const serviceNames = servicesRef.current.map((s) => s.name);
           addMessage(
             'bot',
             'Ótimo! Qual serviço você gostaria de agendar?',
             serviceNames
           );
           setConversationState(ConversationState.SELECTING_SERVICE);
-        }, 1000);
+        }
         break;
+      }
 
-      case ConversationState.SELECTING_SERVICE:
-        // Lógica futura para seleção de serviço
+      case ConversationState.SELECTING_SERVICE: {
+        const selectedService = servicesRef.current.find(
+          (s) => s.name === input
+        );
+        if (selectedService) {
+          setAppointmentDetails({ service: selectedService });
+          addMessage(
+            'bot',
+            'Perfeito. Agora, por favor, escolha uma data.',
+            <Calendar
+              mode="single"
+              onSelect={(date) =>
+                date && handleUserInput(format(date, 'yyyy-MM-dd'))
+              }
+              disabled={(date) => date < new Date()}
+              locale={ptBR}
+            />
+          );
+          setConversationState(ConversationState.SELECTING_DATE);
+        }
+        break;
+      }
+
+      case ConversationState.SELECTING_DATE: {
+        const selectedDate = new Date(input);
+        setAppointmentDetails((prev) => ({ ...prev, date: selectedDate }));
+        addMessage('bot', 'Verificando horários disponíveis...');
+        setIsLoading(true);
+
+        const availableTimes = await checkAvailability(
+          BARBERSHOP_ID,
+          appointmentDetails.service!.id!,
+          selectedDate
+        );
+        setIsLoading(false);
+
+        if (availableTimes.length > 0) {
+          addMessage(
+            'bot',
+            `Encontrei os seguintes horários para ${format(
+              selectedDate,
+              'dd/MM'
+            )}:`,
+            availableTimes
+          );
+          setConversationState(ConversationState.SELECTING_TIME);
+        } else {
+          addMessage(
+            'bot',
+            'Desculpe, não há horários disponíveis para esta data. Por favor, escolha outra.'
+          );
+          setConversationState(ConversationState.SELECTING_SERVICE);
+          handleUserInput(appointmentDetails.service!.name);
+        }
+        break;
+      }
+
+      case ConversationState.SELECTING_TIME: {
+        setAppointmentDetails((prev) => ({ ...prev, time: input }));
+        addMessage(
+          'bot',
+          'Entendido. Para finalizar, qual é o seu nome completo?'
+        );
+        setConversationState(ConversationState.ASKING_NAME);
+        break;
+      }
+
+      case ConversationState.ASKING_NAME: {
+        setAppointmentDetails((prev) => ({ ...prev, clientName: input }));
+        addMessage('bot', 'E qual é o seu número de telefone (com DDD)?');
+        setConversationState(ConversationState.ASKING_PHONE);
+        break;
+      }
+
+      case ConversationState.ASKING_PHONE: {
+        const finalDetails = {
+          ...appointmentDetails,
+          clientPhone: input,
+        };
+        setAppointmentDetails(finalDetails);
+
+        const summary = `
+          Serviço: ${finalDetails.service!.name}
+          Data: ${format(finalDetails.date!, 'dd/MM/yyyy')}
+          Hora: ${finalDetails.time}
+          Nome: ${finalDetails.clientName}
+          Telefone: ${finalDetails.clientPhone}
+        `;
+        addMessage(
+          'bot',
+          `Por favor, confirme os detalhes:
+${summary}`,
+          ['Confirmar Agendamento']
+        );
+        setConversationState(ConversationState.CONFIRMING_APPOINTMENT);
+        break;
+      }
+
+      case ConversationState.CONFIRMING_APPOINTMENT: {
+        if (input === 'Confirmar Agendamento') {
+          addMessage('bot', 'Confirmando sua reserva...');
+          setIsLoading(true);
+          try {
+            const barbers = await getBarbers(BARBERSHOP_ID);
+            const availableBarber = barbers.find((b) => b.isActive);
+            if (!availableBarber)
+              throw new Error('Nenhum barbeiro disponível.');
+
+            const startTime = new Date(appointmentDetails.date!);
+            const [hour, minute] = appointmentDetails.time!.split(':');
+            startTime.setHours(parseInt(hour), parseInt(minute));
+
+            const endTime = new Date(
+              startTime.getTime() + appointmentDetails.service!.duration * 60000
+            );
+
+            await scheduleAppointment({
+              barbershopId: BARBERSHOP_ID,
+              serviceId: appointmentDetails.service!.id!,
+              barberId: availableBarber.id!,
+              clientName: appointmentDetails.clientName!,
+              clientPhone: appointmentDetails.clientPhone!,
+              startTime,
+              endTime,
+            });
+            addMessage(
+              'bot',
+              'Agendamento confirmado com sucesso! Mal podemos esperar para te ver.'
+            );
+          } catch {
+            addMessage(
+              'bot',
+              'Desculpe, não foi possível confirmar seu agendamento. Por favor, tente novamente.'
+            );
+          } finally {
+            setIsLoading(false);
+            setConversationState(ConversationState.FINALIZED);
+          }
+        }
+        break;
+      }
+      default:
         break;
     }
   };
@@ -218,7 +311,7 @@ export default function ChatWidget({
       <ChatInput
         onSend={handleUserInput}
         isLoading={isLoading || isTyping}
-        disabled={isLoading}
+        disabled={isLoading || isTyping}
       />
     </div>
   );

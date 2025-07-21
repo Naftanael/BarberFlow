@@ -216,9 +216,7 @@ export default function BarbersPage() {
                       data-ai-hint={'professional barber'}
                     />
                   </AvatarImage>
-                  <AvatarFallback>
-                    {barber.name.substring(0, 2)}
-                  </AvatarFallback>
+                  <AvatarFallback>{barber.name.substring(0, 2)}</AvatarFallback>
                 </Avatar>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col items-center justify-center">

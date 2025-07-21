@@ -3,10 +3,23 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Share2, Users, Scissors, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from 'recharts';
 import { ClientOnly } from '@/components/client-only';
 
 const chartData = [
@@ -43,7 +56,8 @@ export default function Dashboard() {
         if (successful) {
           toast({
             title: 'Sucesso!',
-            description: 'Link do chatbot copiado para a área de transferência.',
+            description:
+              'Link do chatbot copiado para a área de transferência.',
           });
           setButtonText('Copiado!');
           setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
@@ -66,7 +80,8 @@ export default function Dashboard() {
         () => {
           toast({
             title: 'Sucesso!',
-            description: 'Link do chatbot copiado para a área de transferência.',
+            description:
+              'Link do chatbot copiado para a área de transferência.',
           });
           setButtonText('Copiado!');
           setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
@@ -81,108 +96,115 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-headline tracking-wider text-foreground">
-            Painel Principal
-          </h1>
-          <p className="text-muted-foreground">
-            Visão geral do desempenho da sua barbearia.
-          </p>
+    <ClientOnly>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-headline tracking-wider text-foreground">
+              Painel Principal
+            </h1>
+            <p className="text-muted-foreground">
+              Visão geral do desempenho da sua barbearia.
+            </p>
+          </div>
+          <Button
+            className="font-headline tracking-wider"
+            onClick={copyToClipboard}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            {buttonText}
+          </Button>
         </div>
-        <Button
-          className="font-headline tracking-wider"
-          onClick={copyToClipboard}
-        >
-          <Share2 className="mr-2 h-4 w-4" />
-          {buttonText}
-        </Button>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Faturamento Total
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">R$ 45.231,89</div>
+              <p className="text-xs text-muted-foreground">
+                +20.1% em relação ao mês passado
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Novos Clientes
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">+235</div>
+              <p className="text-xs text-muted-foreground">
+                +180.1% em relação ao mês passado
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Serviços Realizados
+              </CardTitle>
+              <Scissors className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">+12,234</div>
+              <p className="text-xs text-muted-foreground">
+                +19% em relação ao mês passado
+              </p>
+            </CardContent>
+          </Card>
+        </div>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Faturamento Total
+          <CardHeader>
+            <CardTitle className="font-headline tracking-wider">
+              Faturamento da Semana
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardDescription>
+              Desempenho do faturamento nos últimos 6 dias úteis.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ 45.231,89</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% em relação ao mês passado
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Novos Clientes
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+235</div>
-            <p className="text-xs text-muted-foreground">
-              +180.1% em relação ao mês passado
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Serviços Realizados
-            </CardTitle>
-            <Scissors className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
-            <p className="text-xs text-muted-foreground">
-              +19% em relação ao mês passado
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline tracking-wider">
-            Faturamento da Semana
-          </CardTitle>
-          <CardDescription>
-            Desempenho do faturamento nos últimos 6 dias úteis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ClientOnly>
-             <div className="h-[300px]">
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <XAxis
-                      dataKey="day"
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `R$${value}`}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: 'hsl(var(--muted))' }}
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    />
-                    <Bar dataKey="faturamento" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                <BarChart data={chartData}>
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `R$${value}`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted))' }}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                    }}
+                  />
+                  <Bar
+                    dataKey="faturamento"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
               </ResponsiveContainer>
             </div>
-          </ClientOnly>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ClientOnly>
   );
 }

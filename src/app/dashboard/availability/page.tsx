@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -51,12 +50,9 @@ const initialAvailability: AvailabilityData = {
 export default function AvailabilityPage() {
   const { toast } = useToast();
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [selectedBarberId, setSelectedBarberId] = useState<string | null>(
-    null
-  );
-  const [availability, setAvailability] = useState<AvailabilityData>(
-    initialAvailability
-  );
+  const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
+  const [availability, setAvailability] =
+    useState<AvailabilityData>(initialAvailability);
 
   useEffect(() => {
     const fetchBarbers = async () => {
@@ -88,10 +84,7 @@ export default function AvailabilityPage() {
     });
   };
 
-  const handleWorkHoursChange = (
-    field: 'start' | 'end',
-    value: string
-  ) => {
+  const handleWorkHoursChange = (field: 'start' | 'end', value: string) => {
     setAvailability((prev) => ({
       ...prev,
       workHours: { ...prev.workHours, [field]: value },
@@ -154,26 +147,26 @@ export default function AvailabilityPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-4xl font-headline tracking-wider text-foreground">
-          Disponibilidade
-        </h1>
-        <p className="text-muted-foreground">
-          Defina os dias e horários de trabalho para cada barbeiro.
-        </p>
-      </div>
+    <ClientOnly>
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <div>
+          <h1 className="text-4xl font-headline tracking-wider text-foreground">
+            Disponibilidade
+          </h1>
+          <p className="text-muted-foreground">
+            Defina os dias e horários de trabalho para cada barbeiro.
+          </p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <div className="w-full md:w-1/2">
-            <Label
-              htmlFor="barber-select"
-              className="font-headline tracking-wide text-lg"
-            >
-              Barbeiro
-            </Label>
-            <ClientOnly>
+        <Card>
+          <CardHeader>
+            <div className="w-full md:w-1/2">
+              <Label
+                htmlFor="barber-select"
+                className="font-headline tracking-wide text-lg"
+              >
+                Barbeiro
+              </Label>
               <Select
                 value={selectedBarberId || ''}
                 onValueChange={handleBarberChange}
@@ -189,67 +182,65 @@ export default function AvailabilityPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </ClientOnly>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-headline tracking-wide text-lg">
-              Dias de Trabalho
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {daysOfWeek.map((day) => (
-                <div key={day} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={day.toLowerCase()}
-                    checked={availability.workDays.includes(day)}
-                    onCheckedChange={(checked) =>
-                      handleWorkDayChange(day, !!checked)
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4 rounded-lg border p-4">
+              <h3 className="font-headline tracking-wide text-lg">
+                Dias de Trabalho
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {daysOfWeek.map((day) => (
+                  <div key={day} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={day.toLowerCase()}
+                      checked={availability.workDays.includes(day)}
+                      onCheckedChange={(checked) =>
+                        handleWorkDayChange(day, !!checked)
+                      }
+                    />
+                    <Label htmlFor={day.toLowerCase()} className="font-body">
+                      {day}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+              <h3 className="font-headline tracking-wide text-lg">
+                Horário de Trabalho Padrão
+              </h3>
+              <div className="flex items-center gap-4">
+                <div className="w-full">
+                  <Label htmlFor="start-time" className="font-body">
+                    Início
+                  </Label>
+                  <Input
+                    id="start-time"
+                    type="time"
+                    value={availability.workHours.start}
+                    onChange={(e) =>
+                      handleWorkHoursChange('start', e.target.value)
                     }
                   />
-                  <Label htmlFor={day.toLowerCase()} className="font-body">
-                    {day}
-                  </Label>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <h3 className="font-headline tracking-wide text-lg">
-              Horário de Trabalho Padrão
-            </h3>
-            <div className="flex items-center gap-4">
-              <div className="w-full">
-                <Label htmlFor="start-time" className="font-body">
-                  Início
-                </Label>
-                <Input
-                  id="start-time"
-                  type="time"
-                  value={availability.workHours.start}
-                  onChange={(e) =>
-                    handleWorkHoursChange('start', e.target.value)
-                  }
-                />
-              </div>
-              <div className="w-full">
-                <Label htmlFor="end-time" className="font-body">
-                  Fim
-                </Label>
-                <Input
-                  id="end-time"
-                  type="time"
-                  value={availability.workHours.end}
-                  onChange={(e) =>
-                    handleWorkHoursChange('end', e.target.value)
-                  }
-                />
+                <div className="w-full">
+                  <Label htmlFor="end-time" className="font-body">
+                    Fim
+                  </Label>
+                  <Input
+                    id="end-time"
+                    type="time"
+                    value={availability.workHours.end}
+                    onChange={(e) =>
+                      handleWorkHoursChange('end', e.target.value)
+                    }
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <ClientOnly>
             <div className="space-y-4 rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-headline tracking-wide text-lg">
@@ -308,19 +299,18 @@ export default function AvailabilityPage() {
                 ))}
               </div>
             </div>
-          </ClientOnly>
 
-          <div className="flex justify-end">
-            <Button
-              className="font-headline tracking-wider text-lg"
-              onClick={handleSave}
-            >
-              Salvar Alterações
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="flex justify-end">
+              <Button
+                className="font-headline tracking-wider text-lg"
+                onClick={handleSave}
+              >
+                Salvar Alterações
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ClientOnly>
   );
 }
-

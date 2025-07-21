@@ -1,15 +1,18 @@
-// src/components/chat/MessageList.tsx
+// src/components/chat/message-list.tsx
 'use client';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useRef, useEffect } from 'react';
 import { MessageBubble } from './message-bubble';
 import { OptionPicker } from './option-picker';
-import { useEffect, useRef } from 'react';
+import { TypingIndicator } from './typing-indicator';
+import type { ReactNode } from 'react';
 
+// Estrutura da Mensagem (padrão)
 export interface Message {
-  from: 'user' | 'bot';
+  id: string;
+  sender: 'user' | 'bot';
   text: string;
-  options?: string[];
+  options?: ReactNode | string[];
 }
 
 interface MessageListProps {
@@ -23,30 +26,35 @@ export const MessageList = ({
   isTyping,
   onOptionSelect,
 }: MessageListProps) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div');
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
-    }
+    // Scroll para a última mensagem
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  const renderMessageContent = (message: Message) => {
+    if (Array.isArray(message.options)) {
+      return (
+        <OptionPicker
+          options={message.options}
+          onOptionClick={onOptionSelect}
+        />
+      );
+    }
+    // Renderiza o nó React (como o Calendário) ou o texto simples
+    return message.options || message.text;
+  };
+
   return (
-    <ScrollArea className="flex-1" ref={scrollAreaRef}>
-      <div className="p-4 space-y-6">
-        {messages.map((msg, index) => (
-          <div key={index}>
-            <MessageBubble from={msg.from} text={msg.text} />
-            {msg.options && (
-              <OptionPicker options={msg.options} onSelect={onOptionSelect} />
-            )}
-          </div>
-        ))}
-        {isTyping && <MessageBubble from="bot" isTyping />}
-      </div>
-    </ScrollArea>
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-copper/70 scrollbar-track-wood-dark/50">
+      {messages.map((message) => (
+        <MessageBubble key={message.id} sender={message.sender}>
+          {renderMessageContent(message)}
+        </MessageBubble>
+      ))}
+      {isTyping && <MessageBubble sender="bot" isTyping />}
+      <div ref={scrollRef} />
+    </div>
   );
 };

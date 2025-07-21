@@ -11,8 +11,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ClientList from './components/client-list';
-import InactiveClientList from './components/inactive-client-list'; // Importa o novo componente
-import { useState } from 'react';
+import InactiveClientList from './components/inactive-client-list';
+import { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -23,9 +23,22 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { getClients } from '@/lib/firestore';
+import { Client } from '@/lib/schemas';
+
+const BARBERSHOP_ID = 'barbershop-1';
 
 export default function ClientsPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [clients, setClients] = useState<Client[]>([]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      const fetchedClients = await getClients(BARBERSHOP_ID);
+      setClients(fetchedClients);
+    };
+    fetchClients();
+  }, []);
 
   return (
     <div className="flex flex-col gap-8">
@@ -49,7 +62,7 @@ export default function ClientsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <InactiveClientList />
+            <InactiveClientList clients={clients} />
           </CardContent>
         </Card>
       </div>
@@ -138,7 +151,7 @@ export default function ClientsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ClientList />
+              <ClientList clients={clients} />
             </CardContent>
           </Card>
         </div>

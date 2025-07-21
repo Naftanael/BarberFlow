@@ -10,35 +10,27 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Client } from '@/lib/schemas';
+import { subDays } from 'date-fns';
 
-const clients = [
-  {
-    name: 'João da Silva',
-    phone: '(11) 98765-4321',
-    status: 'active',
-    lastAppointment: new Date(2024, 4, 15), // Mês 4 = Maio
-  },
-  {
-    name: 'Maria Oliveira',
-    phone: '(21) 91234-5678',
-    status: 'active',
-    lastAppointment: new Date(2024, 4, 18), // Mês 4 = Maio
-  },
-  {
-    name: 'Carlos Pereira',
-    phone: '(31) 99999-8888',
-    status: 'inactive',
-    lastAppointment: new Date(2024, 2, 5), // Mês 2 = Março
-  },
-  {
-    name: 'Ana Costa',
-    phone: '(41) 98888-7777',
-    status: 'active',
-    lastAppointment: new Date(2024, 4, 20), // Mês 4 = Maio
-  },
-];
+interface ClientListProps {
+  clients: Client[];
+}
 
-export default function ClientList() {
+export default function ClientList({ clients }: ClientListProps) {
+  const thirtyDaysAgo = subDays(new Date(), 30);
+  const activeClients = clients.filter(
+    (client) => client.lastAppointment >= thirtyDaysAgo
+  );
+
+  if (activeClients.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Nenhum cliente ativo encontrado.
+      </p>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -50,18 +42,24 @@ export default function ClientList() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {clients.map((client) => (
-          <TableRow key={client.phone}>
+        {activeClients.map((client) => (
+          <TableRow key={client.id}>
             <TableCell>{client.name}</TableCell>
             <TableCell>{client.phone}</TableCell>
             <TableCell>
-              {format(client.lastAppointment, 'dd/MM/yyyy')}
+              {format(new Date(client.lastAppointment), 'dd/MM/yyyy')}
             </TableCell>
             <TableCell>
               <Badge
-                variant={client.status === 'active' ? 'default' : 'outline'}
+                variant={
+                  new Date(client.lastAppointment) >= thirtyDaysAgo
+                    ? 'default'
+                    : 'outline'
+                }
               >
-                {client.status === 'active' ? 'Ativo' : 'Inativo'}
+                {new Date(client.lastAppointment) >= thirtyDaysAgo
+                  ? 'Ativo'
+                  : 'Inativo'}
               </Badge>
             </TableCell>
           </TableRow>

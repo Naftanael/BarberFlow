@@ -1,3 +1,4 @@
+// src/app/dashboard/barbers/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -20,41 +21,64 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Barber, BarberSchema } from '@/lib/schemas';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, getDocs } from 'firebase/firestore';
 
-const mockBarbers = [
-  {
-    id: '1',
-    name: 'João Silva',
-    status: 'Ativo',
-    avatar: 'https://placehold.co/128x128.png',
-    hint: 'male professional',
-  },
-  {
-    id: '2',
-    name: 'Carlos Pereira',
-    status: 'Ativo',
-    avatar: 'https://placehold.co/128x128.png',
-    hint: 'male smiling',
-  },
-  {
-    id: '3',
-    name: 'Marcos Andrade',
-    status: 'Inativo',
-    avatar: 'https://placehold.co/128x128.png',
-    hint: 'male serious',
-  },
-];
+const BARBERSHOP_ID = 'barbershop-1';
 
-export default function BarbersPage() {
+async function getBarbers(): Promise<Barber[]> {
+  const barbersCol = collection(db, 'barbershops', BARBERSHOP_ID, 'barbers');
+  const barbersSnapshot = await getDocs(barbersCol);
+  const barbersList = barbersSnapshot.docs.map((doc) => ({
+    ...doc.data(),
+    id: doc.id,
+  }));
+  return BarberSchema.array().parse(barbersList);
+}
+
+export default async function BarbersPage() {
+  const barbers = await getBarbers();
+
+  return <BarbersView initialBarbers={barbers} />;
+}
+
+function BarbersView({ initialBarbers }: { initialBarbers: Barber[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [barbers, setBarbers] = useState(initialBarbers);
+  const [newBarberName, setNewBarberName] = useState('');
 
-  const handleSave = () => {
-    toast({
-      title: 'Sucesso!',
-      description: 'Barbeiro salvo com sucesso.',
-    });
-    setIsDialogOpen(false);
+  const handleSave = async () => {
+    try {
+      const newBarberData = {
+        name: newBarberName,
+        barbershopId: BARBERSHOP_ID,
+        isActive: true,
+      };
+
+      const parsedBarber = BarberSchema.omit({ id: true }).parse(newBarberData);
+
+      const docRef = await addDoc(
+        collection(db, 'barbershops', BARBERSHOP_ID, 'barbers'),
+        parsedBarber
+      );
+
+      setBarbers([...barbers, { ...parsedBarber, id: docRef.id }]);
+      setNewBarberName('');
+      toast({
+        title: 'Sucesso!',
+        description: 'Barbeiro salvo com sucesso.',
+      });
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar barbeiro:', error);
+      toast({
+        title: 'Erro!',
+        description: 'Não foi possível salvar o barbeiro.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = () => {
@@ -109,7 +133,9 @@ export default function BarbersPage() {
                 </Label>
                 <Input
                   id="name"
-                  defaultValue="Novo Barbeiro"
+                  value={newBarberName}
+                  onChange={(e) => setNewBarberName(e.target.value)}
+                  placeholder="Nome do barbeiro"
                   className="col-span-3"
                 />
               </div>
@@ -153,20 +179,20 @@ export default function BarbersPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {mockBarbers.map((barber) => (
+        {barbers.map((barber) => (
           <Card
             key={barber.id}
             className="flex flex-col text-center hover:border-primary/50 transition-colors"
           >
             <CardHeader className="items-center">
               <Avatar className="h-32 w-32 border-4 border-primary/50">
-                <AvatarImage asChild src={barber.avatar}>
+                <AvatarImage asChild src={barber.avatarUrl || ''}>
                   <Image
-                    src={barber.avatar}
+                    src={barber.avatarUrl || 'https://placehold.co/128x128.png'}
                     alt={barber.name}
                     width={128}
                     height={128}
-                    data-ai-hint={barber.hint}
+                    data-ai-hint={'professional barber'}
                   />
                 </AvatarImage>
                 <AvatarFallback>{barber.name.substring(0, 2)}</AvatarFallback>
@@ -177,10 +203,10 @@ export default function BarbersPage() {
                 {barber.name}
               </CardTitle>
               <Badge
-                variant={barber.status === 'Ativo' ? 'default' : 'secondary'}
+                variant={barber.isActive ? 'default' : 'secondary'}
                 className="mt-2"
               >
-                {barber.status}
+                {barber.isActive ? 'Ativo' : 'Inativo'}
               </Badge>
             </CardContent>
             <div className="flex justify-center gap-2 p-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -33,26 +33,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { getServices } from '@/lib/firestore';
+import { Service } from '@/lib/schemas';
 
-const mockServices = [
-  { id: '1', name: 'Corte Masculino', duration: 30, price: 50.0, active: true },
-  { id: '2', name: 'Barba', duration: 20, price: 30.0, active: true },
-  { id: '3', name: 'Corte e Barba', duration: 50, price: 75.0, active: true },
-  { id: '4', name: 'Penteado', duration: 15, price: 20.0, active: false },
-  {
-    id: '5',
-    name: 'Hidratação Capilar',
-    duration: 25,
-    price: 40.0,
-    active: true,
-  },
-];
+const BARBERSHOP_ID = 'barbershop-1';
 
 export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      const fetchedServices = await getServices(BARBERSHOP_ID);
+      setServices(fetchedServices);
+    };
+
+    fetchServices();
+  }, []);
+
   const handleSave = () => {
+    // Lógica para salvar o novo serviço no Firestore
     toast({
       title: 'Sucesso!',
       description: 'Serviço salvo com sucesso.',
@@ -61,6 +62,7 @@ export default function ServicesPage() {
   };
 
   const handleEdit = () => {
+    // Lógica para editar o serviço
     toast({
       title: 'Sucesso!',
       description: 'Serviço atualizado com sucesso.',
@@ -68,6 +70,7 @@ export default function ServicesPage() {
   };
 
   const handleDelete = () => {
+    // Lógica para deletar o serviço
     toast({
       title: 'Sucesso!',
       description: 'Serviço deletado com sucesso.',
@@ -193,14 +196,14 @@ export default function ServicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockServices.map((service) => (
+              {services.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>{service.duration} min</TableCell>
                   <TableCell>R$ {service.price.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant={service.active ? 'default' : 'secondary'}>
-                      {service.active ? 'Ativo' : 'Inativo'}
+                    <Badge variant={service.isActive ? 'default' : 'secondary'}>
+                      {service.isActive ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>
                   <TableCell>

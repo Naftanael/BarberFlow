@@ -4,7 +4,6 @@ import { z } from 'zod';
 // Schema para a coleção 'services'
 export const ServiceSchema = z.object({
   id: z.string().optional(), // O ID virá do Firestore
-  barbershopId: z.string(),
   name: z.string(),
   duration: z.number().positive(), // em minutos
   price: z.number().positive(),
@@ -25,6 +24,16 @@ export const BarberSchema = z.object({
     .optional(),
 });
 export type Barber = z.infer<typeof BarberSchema>;
+
+// Schema para a coleção 'clients'
+export const ClientSchema = z.object({
+  id: z.string().optional(),
+  barbershopId: z.string(),
+  name: z.string(),
+  phone: z.string(),
+  lastAppointment: z.string(), // Mantendo como string para simplicidade
+});
+export type Client = z.infer<typeof ClientSchema>;
 
 // Schema para a coleção 'appointments'
 export const AppointmentSchema = z.object({

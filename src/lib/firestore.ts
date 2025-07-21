@@ -1,47 +1,31 @@
 // src/lib/firestore.ts
-import { initializeApp } from 'firebase/app';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from './firebase'; // Importa a instância do DB já inicializada
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  connectFirestoreEmulator,
-} from 'firebase/firestore';
-import { ServiceSchema, Service } from './schemas';
+  ServiceSchema,
+  Service,
+  BarberSchema,
+  Barber,
+  Client,
+  ClientSchema,
+} from './schemas';
 import { z } from 'zod';
 
-// Configuração do Firebase (deve ser movida para variáveis de ambiente)
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+const BARBERSHOP_ID = 'barbershop-1';
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-if (process.env.NODE_ENV === 'development') {
-  connectFirestoreEmulator(db, '127.0.0.1', 8081);
-}
-
-// Funções de exemplo para interagir com o Firestore
-
+// As funções agora usam a instância 'db' importada
 /**
  * Busca todos os serviços de um determinado salão.
  * @param barberShopId O ID do salão de beleza.
  * @returns Uma lista de serviços.
  */
-export async function getServices(
-  barberShopId: string,
-): Promise<Service[]> {
+export async function getServices(barberShopId: string): Promise<Service[]> {
   const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
   const servicesSnapshot = await getDocs(servicesCol);
-  const servicesList = servicesSnapshot.docs.map((doc) => doc.data());
+  const servicesList = servicesSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 
   // Valida os dados com Zod
   return z.array(ServiceSchema).parse(servicesList);
@@ -55,7 +39,7 @@ export async function getServices(
  */
 export async function getServiceByName(
   barberShopId: string,
-  serviceName: string,
+  serviceName: string
 ): Promise<Service | null> {
   const servicesCol = collection(db, 'barbershops', barberShopId, 'services');
   const q = query(servicesCol, where('name', '==', serviceName));
@@ -65,8 +49,38 @@ export async function getServiceByName(
     return null;
   }
 
-  const serviceData = querySnapshot.docs[0].data();
+  const serviceData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
   return ServiceSchema.parse(serviceData);
+}
+
+/**
+ * Busca todos os barbeiros de um determinado salão.
+ * @param barberShopId O ID do salão de beleza.
+ * @returns Uma lista de barbeiros.
+ */
+export async function getBarbers(barberShopId: string): Promise<Barber[]> {
+  const barbersCol = collection(db, 'barbershops', barberShopId, 'barbers');
+  const barbersSnapshot = await getDocs(barbersCol);
+  const barbersList = barbersSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  return z.array(BarberSchema).parse(barbersList);
+}
+
+/**
+ * Busca todos os clientes de um determinado salão.
+ * @param barberShopId O ID do salão de beleza.
+ * @returns Uma lista de clientes.
+ */
+export async function getClients(barberShopId: string): Promise<Client[]> {
+  const clientsCol = collection(db, 'barbershops', barberShopId, 'clients');
+  const clientsSnapshot = await getDocs(clientsCol);
+  const clientsList = clientsSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  return z.array(ClientSchema).parse(clientsList);
 }
 
 export { db };

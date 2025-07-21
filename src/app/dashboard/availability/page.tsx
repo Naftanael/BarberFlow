@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ClientOnly } from '@/components/client-only';
 
 const daysOfWeek = [
   'Domingo',
@@ -55,15 +56,17 @@ export default function AvailabilityPage() {
             >
               Barbeiro
             </Label>
-            <Select>
-              <SelectTrigger id="barber-select">
-                <SelectValue placeholder="Selecione um barbeiro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="joao">João Silva</SelectItem>
-                <SelectItem value="carlos">Carlos Pereira</SelectItem>
-              </SelectContent>
-            </Select>
+            <ClientOnly>
+              <Select>
+                <SelectTrigger id="barber-select">
+                  <SelectValue placeholder="Selecione um barbeiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="joao">João Silva</SelectItem>
+                  <SelectItem value="carlos">Carlos Pereira</SelectItem>
+                </SelectContent>
+              </Select>
+            </ClientOnly>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -108,41 +111,52 @@ export default function AvailabilityPage() {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-headline tracking-wide text-lg">
-                Intervalos
-              </h3>
-              <Button variant="outline" size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-4">
-                <div className="w-full">
-                  <Label htmlFor="break-start-1" className="font-body">
-                    Início
-                  </Label>
-                  <Input id="break-start-1" type="time" defaultValue="12:00" />
-                </div>
-                <div className="w-full">
-                  <Label htmlFor="break-end-1" className="font-body">
-                    Fim
-                  </Label>
-                  <Input id="break-end-1" type="time" defaultValue="13:00" />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="self-end text-destructive hover:bg-destructive/10"
-                >
-                  <span className="sr-only">Remover intervalo</span>
-                  <Trash2 className="h-5 w-5" />
+          <ClientOnly>
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-headline tracking-wide text-lg">
+                  Intervalos
+                </h3>
+                <Button variant="outline" size="sm">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar
                 </Button>
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <div className="w-full">
+                    <Label htmlFor="break-start-1" className="font-body">
+                      Início
+                    </Label>
+                    <Input
+                      id="break-start-1"
+                      type="time"
+                      defaultValue="12:00"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="break-end-1" className="font-body">
+                      Fim
+                    </Label>
+                    <Input
+                      id="break-end-1"
+                      type="time"
+                      defaultValue="13:00"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="self-end text-destructive hover:bg-destructive/10"
+                  >
+                    <span className="sr-only">Remover intervalo</span>
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          </ClientOnly>
+
           <div className="flex justify-end">
             <Button
               className="font-headline tracking-wider text-lg"

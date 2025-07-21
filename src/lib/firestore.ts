@@ -89,40 +89,10 @@ const dateToMinutes = (date: Date) => {
   return date.getHours() * 60 + date.getMinutes();
 };
 
-/**
- * Verifica os horários disponíveis para um serviço, com um barbeiro específico, em uma data.
- */
-export async function checkAvailability(
+export async function getAppointmentsByDate(
   barberShopId: string,
-  serviceId: string,
-  barberId: string,
   date: Date
-): Promise<string[]> {
-  const serviceRef = doc(
-    db,
-    'barbershops',
-    barberShopId,
-    'services',
-    serviceId
-  );
-  const serviceSnap = await getDoc(serviceRef);
-  if (!serviceSnap.exists()) throw new Error('Serviço não encontrado');
-  const service = ServiceSchema.parse({ id: serviceSnap.id, ...serviceSnap.data() });
-  const serviceDuration = service.duration;
-
-  const barberRef = doc(
-    db,
-    'barbershops',
-    barberShopId,
-    'barbers',
-    barberId
-  );
-  const barberSnap = await getDoc(barberRef);
-  if (!barberSnap.exists() || !barberSnap.data().isActive || !barberSnap.data().availability) {
-    return [];
-  }
-  const barber = BarberSchema.parse({ id: barberSnap.id, ...barberSnap.data() });
-
+): Promise<Appointment[]> {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -131,14 +101,13 @@ export async function checkAvailability(
   const appointmentsCol = collection(db, 'barbershops', barberShopId, 'appointments');
   const q = query(
     appointmentsCol,
-    where('barberId', '==', barberId),
     where('startTime', '>=', Timestamp.fromDate(startOfDay)),
     where('startTime', '<=', Timestamp.fromDate(endOfDay))
   );
+
   const appointmentsSnapshot = await getDocs(q);
-  const existingAppointments = appointmentsSnapshot.docs.map((doc) => {
+  const appointmentsList = appointmentsSnapshot.docs.map((doc) => {
     const data = doc.data();
-    // Converte Timestamps do Firestore para objetos Date
     return AppointmentSchema.parse({
       id: doc.id,
       ...data,
@@ -147,14 +116,42 @@ export async function checkAvailability(
     });
   });
 
+  return appointmentsList;
+}
+
+export async function checkAvailability(
+  barberShopId: string,
+  serviceId: string,
+  barberId: string,
+  date: Date
+): Promise<string[]> {
+  const serviceRef = doc(db, 'barbershops', barberShopId, 'services', serviceId);
+  const serviceSnap = await getDoc(serviceRef);
+  if (!serviceSnap.exists()) throw new Error('Serviço não encontrado');
+  const service = ServiceSchema.parse({ id: serviceSnap.id, ...serviceSnap.data() });
+  const serviceDuration = service.duration;
+
+  const barberRef = doc(db, 'barbershops', barberShopId, 'barbers', barberId);
+  const barberSnap = await getDoc(barberRef);
+  if (!barberSnap.exists() || !barberSnap.data().isActive || !barberSnap.data().availability) {
+    return [];
+  }
+  const barber = BarberSchema.parse({ id: barberSnap.id, ...barberSnap.data() });
+
+  const existingAppointments = await getAppointmentsByDate(barberShopId, date);
+  const barberAppointments = existingAppointments.filter(apt => apt.barberId === barberId);
+
   const availableSlots: Set<string> = new Set();
+  
   const portugueseDaysOfWeek = [
     'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
     'Quinta-feira', 'Sexta-feira', 'Sábado'
   ];
+  // CORREÇÃO: Usar getDay() que é consistente e independente de fuso horário/locale para o index
   const dayOfWeek = portugueseDaysOfWeek[date.getDay()];
-
-  if (!barber.availability!.workDays.includes(dayOfWeek)) {
+  
+  const workDaysLowerCase = barber.availability!.workDays.map(d => d.toLowerCase());
+  if (!workDaysLowerCase.includes(dayOfWeek.toLowerCase())) {
     return [];
   }
 
@@ -169,11 +166,12 @@ export async function checkAvailability(
 
     const isInBreak = barber.availability!.breaks.some(
       (b) =>
+        b.start && b.end &&
         slotStart < timeToMinutes(b.end) && slotEnd > timeToMinutes(b.start)
     );
     if (isInBreak) continue;
 
-    const isBooked = existingAppointments.some(
+    const isBooked = barberAppointments.some(
       (apt) =>
         slotStart < dateToMinutes(apt.endTime) &&
         slotEnd > dateToMinutes(apt.startTime)
@@ -188,9 +186,6 @@ export async function checkAvailability(
   return Array.from(availableSlots).sort();
 }
 
-/**
- * Cria um novo agendamento.
- */
 export async function scheduleAppointment(
   appointmentData: Omit<Appointment, 'id' | 'status'>
 ): Promise<string> {

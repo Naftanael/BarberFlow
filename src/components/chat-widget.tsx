@@ -294,7 +294,7 @@ ${summary}`, [
   return (
     <div
       className={cn(
-        "overflow-hidden flex flex-col bg-[#212121] bg-[url('/textures/concrete.png')] bg-blend-overlay",
+        'overflow-hidden flex flex-col bg-[#212121]', // Removida a textura
         isFloating
           ? 'fixed bottom-0 right-0 md:bottom-4 md:right-4 w-full h-full md:w-[380px] md:h-[600px] md:rounded-lg shadow-2xl z-50 animate-in fade-in-50 slide-in-from-bottom-10 duration-300'
           : 'w-full h-screen'

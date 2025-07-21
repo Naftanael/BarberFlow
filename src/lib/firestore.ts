@@ -85,6 +85,10 @@ const timeToMinutes = (time: string) => {
   return hours * 60 + minutes;
 };
 
+const dateToMinutes = (date: Date) => {
+  return date.getHours() * 60 + date.getMinutes();
+};
+
 /**
  * Verifica os horários disponíveis para um serviço, com um barbeiro específico, em uma data.
  */
@@ -115,11 +119,10 @@ export async function checkAvailability(
   );
   const barberSnap = await getDoc(barberRef);
   if (!barberSnap.exists() || !barberSnap.data().isActive || !barberSnap.data().availability) {
-    return []; // Retorna vazio se o barbeiro não for válido ou não tiver disponibilidade
+    return [];
   }
   const barber = BarberSchema.parse({ id: barberSnap.id, ...barberSnap.data() });
 
-  // Busca agendamentos apenas para a data e barbeiro selecionados
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
@@ -133,15 +136,26 @@ export async function checkAvailability(
     where('startTime', '<=', Timestamp.fromDate(endOfDay))
   );
   const appointmentsSnapshot = await getDocs(q);
-  const existingAppointments = appointmentsSnapshot.docs.map((doc) =>
-    AppointmentSchema.parse({ id: doc.id, ...doc.data() })
-  );
+  const existingAppointments = appointmentsSnapshot.docs.map((doc) => {
+    const data = doc.data();
+    // Converte Timestamps do Firestore para objetos Date
+    return AppointmentSchema.parse({
+      id: doc.id,
+      ...data,
+      startTime: (data.startTime as Timestamp).toDate(),
+      endTime: (data.endTime as Timestamp).toDate(),
+    });
+  });
 
   const availableSlots: Set<string> = new Set();
-  const dayOfWeek = date.toLocaleString('pt-BR', { weekday: 'long' });
+  const portugueseDaysOfWeek = [
+    'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+    'Quinta-feira', 'Sexta-feira', 'Sábado'
+  ];
+  const dayOfWeek = portugueseDaysOfWeek[date.getDay()];
 
-  if (!barber.availability!.workDays.map(d => d.toLowerCase()).includes(dayOfWeek.toLowerCase())) {
-    return []; // Barbeiro não trabalha neste dia
+  if (!barber.availability!.workDays.includes(dayOfWeek)) {
+    return [];
   }
 
   const workStart = timeToMinutes(barber.availability!.workHours.start);
@@ -161,8 +175,8 @@ export async function checkAvailability(
 
     const isBooked = existingAppointments.some(
       (apt) =>
-        slotStart < apt.endTime.getHours() * 60 + apt.endTime.getMinutes() &&
-        slotEnd > apt.startTime.getHours() * 60 + apt.startTime.getMinutes()
+        slotStart < dateToMinutes(apt.endTime) &&
+        slotEnd > dateToMinutes(apt.startTime)
     );
     if (isBooked) continue;
 

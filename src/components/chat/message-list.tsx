@@ -52,7 +52,7 @@ export const MessageList = ({
     <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/70 scrollbar-track-secondary">
       {messages.map((message) => (
         <MessageBubble key={message.id} sender={message.sender}>
-          {renderMessage-content(message)}
+          {renderMessageContent(message)}
         </MessageBubble>
       ))}
       {isTyping && <MessageBubble sender="bot" isTyping />}

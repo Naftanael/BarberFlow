@@ -196,6 +196,7 @@ export default function DashboardLayout({
                     alt="Avatar"
                     className="overflow-hidden rounded-full"
                     data-ai-hint="barber portrait"
+                    priority
                   />
                 </Button>
               </DropdownMenuTrigger>

@@ -8,8 +8,8 @@ import { ChatHeader } from './chat/chat-header';
 import { MessageList, Message } from './chat/message-list';
 import { ChatInput } from './chat/chat-input';
 import { cn } from '@/lib/utils';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { getBarbers } from '@/lib/firestore';
+import type { Barber } from '@/lib/schemas';
 
 const BARBERSHOP_ID = 'barbershop-1';
 const BARBERSHOP_NAME = 'BarberFlow';
@@ -26,6 +26,16 @@ const initialMessage: Message = {
   from: 'bot',
   text: `Olá! Sou o assistente virtual da ${BARBERSHOP_NAME}. Para começar, por favor, me diga seu nome.`,
 };
+
+const portugueseDaysOfWeek = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado',
+];
 
 interface ChatWidgetProps {
   startOpen?: boolean;
@@ -45,65 +55,62 @@ export default function ChatWidget({
   );
 
   useEffect(() => {
-    const fetchAvailabilityAndCheckHours = async () => {
+    const checkOpeningHours = async () => {
       try {
-        const availabilityRef = doc(
-          db,
-          'barbershops',
-          BARBERSHOP_ID,
-          'availability',
-          'default' // Assumindo que a disponibilidade padrão tem o id 'default'
-        );
-        const docSnap = await getDoc(availabilityRef);
+        const barbers = await getBarbers(BARBERSHOP_ID);
+        let isShopOpen = false;
 
-        let isClosed = true; // Começa como fechado por padrão
-        let closedMessage = `Olá! No momento estamos fechados. Por favor, verifique nossos horários de funcionamento.`;
+        const now = new Date();
+        const dayOfWeek = portugueseDaysOfWeek[now.getDay()]; // Correctly get day in Portuguese
+        const currentTime = now.getHours() + now.getMinutes() / 60;
 
-        if (docSnap.exists()) {
-          const availabilityData = docSnap.data();
-          const now = new Date();
-          const dayOfWeek = now.getDay(); // 0 = Domingo
-          const currentHour = now.getHours() + now.getMinutes() / 60;
+        for (const barber of barbers) {
+          if (!barber.availability || !barber.isActive) continue;
 
-          const today = [
-            'sunday',
-            'monday',
-            'tuesday',
-            'wednesday',
-            'thursday',
-            'friday',
-            'saturday',
-          ][dayOfWeek];
+          const isWorkingToday = barber.availability.workDays.includes(
+            dayOfWeek
+          );
+          if (!isWorkingToday) continue;
 
-          const schedule = availabilityData.days[today];
+          const { start, end } = barber.availability.workHours;
+          const startTime =
+            parseInt(start.split(':')[0]) + parseInt(start.split(':')[1]) / 60;
+          const endTime =
+            parseInt(end.split(':')[0]) + parseInt(end.split(':')[1]) / 60;
 
-          if (schedule && schedule.isOpen) {
-            const openTime =
-              parseInt(schedule.open.split(':')[0]) +
-              parseInt(schedule.open.split(':')[1]) / 60;
-            const closeTime =
-              parseInt(schedule.close.split(':')[0]) +
-              parseInt(schedule.close.split(':')[1]) / 60;
+          if (currentTime >= startTime && currentTime < endTime) {
+            // Check for breaks
+            const isInBreak = barber.availability.breaks.some((breakItem) => {
+              const breakStart =
+                parseInt(breakItem.start.split(':')[0]) +
+                parseInt(breakItem.start.split(':')[1]) / 60;
+              const breakEnd =
+                parseInt(breakItem.end.split(':')[0]) +
+                parseInt(breakItem.end.split(':')[1]) / 60;
+              return currentTime >= breakStart && currentTime < breakEnd;
+            });
 
-            if (currentHour >= openTime && currentHour < closeTime) {
-              isClosed = false;
-            } else {
-              closedMessage = `Olá! Hoje nosso horário é das ${schedule.open} às ${schedule.close}. No momento estamos fechados.`;
+            if (!isInBreak) {
+              isShopOpen = true;
+              break; // Found an available barber, no need to check others
             }
-          } else {
-            closedMessage = `Olá! Hoje não estamos abertos.`;
           }
         }
 
-        if (isClosed) {
-          setMessages([{ from: 'bot', text: closedMessage }]);
-          setConversationState(ConversationState.CLOSED);
-        } else {
+        if (isShopOpen) {
           setMessages([initialMessage]);
           setConversationState(ConversationState.ASKING_NAME);
+        } else {
+          setMessages([
+            {
+              from: 'bot',
+              text: `Olá! No momento, todos os nossos barbeiros estão indisponíveis ou estamos fora do nosso horário de funcionamento.`,
+            },
+          ]);
+          setConversationState(ConversationState.CLOSED);
         }
       } catch (error) {
-        console.error('Erro ao buscar disponibilidade:', error);
+        console.error('Erro ao verificar horário de funcionamento:', error);
         setMessages([
           {
             from: 'bot',
@@ -116,7 +123,7 @@ export default function ChatWidget({
       }
     };
 
-    fetchAvailabilityAndCheckHours();
+    checkOpeningHours();
   }, []);
 
   const addMessage = (

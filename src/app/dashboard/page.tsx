@@ -3,19 +3,19 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Share2, Users, Scissors, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ClientOnly } from '@/components/client-only';
 
-const data = [
-  { name: 'Seg', faturamento: 400 },
-  { name: 'Ter', faturamento: 300 },
-  { name: 'Qua', faturamento: 600 },
-  { name: 'Qui', faturamento: 800 },
-  { name: 'Sex', faturamento: 700 },
-  { name: 'Sáb', faturamento: 900 },
+const chartData = [
+  { day: 'Segunda', faturamento: 400 },
+  { day: 'Terça', faturamento: 300 },
+  { day: 'Quarta', faturamento: 600 },
+  { day: 'Quinta', faturamento: 800 },
+  { day: 'Sexta', faturamento: 700 },
+  { day: 'Sábado', faturamento: 900 },
 ];
 
 export default function Dashboard() {
@@ -146,17 +146,40 @@ export default function Dashboard() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Faturamento da Semana</CardTitle>
+          <CardTitle className="font-headline tracking-wider">
+            Faturamento da Semana
+          </CardTitle>
+          <CardDescription>
+            Desempenho do faturamento nos últimos 6 dias úteis.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ClientOnly>
-            <BarChart width={600} height={300} data={data}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="faturamento" fill="#8884d8" />
-            </BarChart>
+             <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <XAxis
+                      dataKey="day"
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `R$${value}`}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'hsl(var(--muted))' }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                    />
+                    <Bar dataKey="faturamento" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+              </ResponsiveContainer>
+            </div>
           </ClientOnly>
         </CardContent>
       </Card>

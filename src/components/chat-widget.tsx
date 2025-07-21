@@ -107,9 +107,15 @@ export default function ChatWidget({
   };
 
   // --- MÁQUINA DE ESTADOS PRINCIPAL ---
-  const handleUserInput = (input: string) => {
+  const handleUserInput = (input: string | Date) => {
     clearLastOptions();
-    addMessage('user', input);
+
+    // Se a entrada for uma data, exibe a data formatada, senão, exibe o texto.
+    if (input instanceof Date) {
+      addMessage('user', format(input, 'PPP', { locale: ptBR }));
+    } else {
+      addMessage('user', input);
+    }
 
     setIsTyping(true);
     setTimeout(() => {
@@ -118,7 +124,7 @@ export default function ChatWidget({
     }, 1000);
   };
 
-  const processNextStep = async (input: string) => {
+  const processNextStep = async (input: string | Date) => {
     switch (conversationState) {
       case ConversationState.INITIAL: {
         if (input === 'Agendar Horário') {
@@ -144,9 +150,7 @@ export default function ChatWidget({
             'Perfeito. Agora, por favor, escolha uma data.',
             <Calendar
               mode="single"
-              onSelect={(date) =>
-                date && handleUserInput(format(date, 'yyyy-MM-dd'))
-              }
+              onSelect={(date) => date && handleUserInput(date)} // Passa o objeto Date diretamente
               disabled={(date) => date < new Date()}
               locale={ptBR}
             />
@@ -157,7 +161,8 @@ export default function ChatWidget({
       }
 
       case ConversationState.SELECTING_DATE: {
-        const selectedDate = new Date(input);
+        if (!(input instanceof Date)) return; // Garante que a entrada é um objeto Date
+        const selectedDate = input;
         setAppointmentDetails((prev) => ({ ...prev, date: selectedDate }));
         addMessage('bot', 'Verificando horários disponíveis...');
         setIsLoading(true);
@@ -191,7 +196,7 @@ export default function ChatWidget({
       }
 
       case ConversationState.SELECTING_TIME: {
-        setAppointmentDetails((prev) => ({ ...prev, time: input }));
+        setAppointmentDetails((prev) => ({ ...prev, time: input as string }));
         addMessage(
           'bot',
           'Entendido. Para finalizar, qual é o seu nome completo?'
@@ -201,7 +206,7 @@ export default function ChatWidget({
       }
 
       case ConversationState.ASKING_NAME: {
-        setAppointmentDetails((prev) => ({ ...prev, clientName: input }));
+        setAppointmentDetails((prev) => ({ ...prev, clientName: input as string }));
         addMessage('bot', 'E qual é o seu número de telefone (com DDD)?');
         setConversationState(ConversationState.ASKING_PHONE);
         break;
@@ -210,7 +215,7 @@ export default function ChatWidget({
       case ConversationState.ASKING_PHONE: {
         const finalDetails = {
           ...appointmentDetails,
-          clientPhone: input,
+          clientPhone: input as string,
         };
         setAppointmentDetails(finalDetails);
 
@@ -243,7 +248,7 @@ ${summary}`,
 
             const startTime = new Date(appointmentDetails.date!);
             const [hour, minute] = appointmentDetails.time!.split(':');
-            startTime.setHours(parseInt(hour), parseInt(minute));
+            startTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
             const endTime = new Date(
               startTime.getTime() + appointmentDetails.service!.duration * 60000
@@ -279,11 +284,16 @@ ${summary}`,
     }
   };
 
+  const handleSend = (message: string) => {
+    // Apenas entradas de texto do usuário (não de botões/calendário) passam por aqui
+    handleUserInput(message);
+  };
+
   if (!isOpen && isFloating) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg z-50 bg-[#B87333] hover:bg-[#B87333]/90 animate-in fade-in-0 zoom-in-75"
+        className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg z-50 bg-copper hover:bg-copper/90 animate-in fade-in-0 zoom-in-75"
       >
         <Bot className="h-8 w-8 text-white" />
       </Button>
@@ -309,9 +319,9 @@ ${summary}`,
         onOptionSelect={handleUserInput}
       />
       <ChatInput
-        onSend={handleUserInput}
-        isLoading={isLoading || isTyping}
-        disabled={isLoading || isTyping}
+        onSend={handleSend}
+        isLoading={isLoading}
+        isTyping={isTyping}
       />
     </div>
   );

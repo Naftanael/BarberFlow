@@ -35,14 +35,14 @@ export const ChatInput = ({ onSend, isLoading, isTyping }: ChatInputProps) => {
         <Input
           ref={inputRef}
           placeholder={isDisabled ? 'Aguarde...' : 'Digite sua mensagem...'}
-          className="flex-1 bg-[#333333] border-none text-white placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[#B87333]"
+          className="flex-1 bg-[#333333] border-none text-white placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-copper"
           autoComplete="off"
           disabled={isDisabled}
         />
         <Button
           type="submit"
           size="icon"
-          className="bg-[#B87333] hover:bg-[#B87333]/90 text-white shrink-0"
+          className="bg-copper hover:bg-copper/90 text-white shrink-0"
           disabled={isDisabled}
         >
           {isLoading ? (

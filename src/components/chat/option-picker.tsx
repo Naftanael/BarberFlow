@@ -15,7 +15,7 @@ export const OptionPicker = ({ options, onSelect }: OptionPickerProps) => (
         key={i}
         onClick={() => onSelect(option)}
         variant="outline"
-        className="w-full h-auto py-2 bg-transparent border-[#B87333] text-[#B87333] hover:bg-[#B87333] hover:text-white font-headline uppercase tracking-wider text-xs"
+        className="w-full h-auto py-2 bg-transparent border-copper text-copper hover:bg-copper hover:text-white font-headline uppercase tracking-wider text-xs"
       >
         {option}
       </Button>

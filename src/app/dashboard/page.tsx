@@ -19,6 +19,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  CartesianGrid,
 } from 'recharts';
 import { ClientOnly } from '@/components/client-only';
 import {
@@ -153,6 +154,8 @@ export default function Dashboard() {
                   tickMargin={10}
                   axisLine={false}
                   tickFormatter={(value) => value.slice(0, 3)}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
                 />
                 <YAxis
                   stroke="hsl(var(--muted-foreground))"

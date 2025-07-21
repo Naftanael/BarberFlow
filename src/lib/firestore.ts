@@ -1,5 +1,12 @@
 // src/lib/firestore.ts
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 import { db } from './firebase'; // Importa a instância do DB já inicializada
 import {
   ServiceSchema,
@@ -8,6 +15,8 @@ import {
   Barber,
   Client,
   ClientSchema,
+  AvailabilitySchema,
+  AvailabilityData,
 } from './schemas';
 import { z } from 'zod';
 
@@ -49,7 +58,10 @@ export async function getServiceByName(
     return null;
   }
 
-  const serviceData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+  const serviceData = {
+    id: querySnapshot.docs[0].id,
+    ...querySnapshot.docs[0].data(),
+  };
   return ServiceSchema.parse(serviceData);
 }
 
@@ -66,6 +78,30 @@ export async function getBarbers(barberShopId: string): Promise<Barber[]> {
     ...doc.data(),
   }));
   return z.array(BarberSchema).parse(barbersList);
+}
+
+/**
+ * Atualiza a disponibilidade de um barbeiro.
+ * @param barberShopId O ID da barbearia.
+ * @param barberId O ID do barbeiro.
+ * @param availability Os novos dados de disponibilidade.
+ */
+export async function updateBarberAvailability(
+  barberShopId: string,
+  barberId: string,
+  availability: AvailabilityData
+) {
+  const barberRef = doc(
+    db,
+    'barbershops',
+    barberShopId,
+    'barbers',
+    barberId
+  );
+  const validatedAvailability = AvailabilitySchema.parse(availability);
+  await updateDoc(barberRef, {
+    availability: validatedAvailability,
+  });
 }
 
 /**

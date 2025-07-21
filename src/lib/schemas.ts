@@ -11,6 +11,22 @@ export const ServiceSchema = z.object({
 });
 export type Service = z.infer<typeof ServiceSchema>;
 
+// Schema para a disponibilidade do barbeiro
+export const AvailabilitySchema = z.object({
+  workDays: z.array(z.string()),
+  workHours: z.object({
+    start: z.string(),
+    end: z.string(),
+  }),
+  breaks: z.array(
+    z.object({
+      start: z.string(),
+      end: z.string(),
+    })
+  ),
+});
+export type AvailabilityData = z.infer<typeof AvailabilitySchema>;
+
 // Schema para a coleção 'barbers'
 export const BarberSchema = z.object({
   id: z.string().optional(),
@@ -18,10 +34,7 @@ export const BarberSchema = z.object({
   name: z.string(),
   avatarUrl: z.string().url().optional(),
   isActive: z.boolean().default(true),
-  // A disponibilidade pode ser mais complexa, mas vamos começar simples
-  availability: z
-    .record(z.string(), z.object({ start: z.string(), end: z.string() }))
-    .optional(),
+  availability: AvailabilitySchema.optional(),
 });
 export type Barber = z.infer<typeof BarberSchema>;
 

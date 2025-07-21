@@ -54,7 +54,13 @@ export async function updateBarberAvailability(
   barberId: string,
   availability: AvailabilityData
 ) {
-  const barberRef = doc(db, 'barbershops', barberShopId, 'barbers', barberId);
+  const barberRef = doc(
+    db,
+    'barbershops',
+    barberShopId,
+    'barbers',
+    barberId
+  );
   const validatedAvailability = AvailabilitySchema.parse(availability);
   await updateDoc(barberRef, {
     availability: validatedAvailability,
@@ -74,24 +80,18 @@ export async function getClients(barberShopId: string): Promise<Client[]> {
 
 // --- LÓGICA DE AGENDAMENTO ---
 
-/**
- * Converte uma string de hora (HH:mm) para minutos desde o início do dia.
- */
 const timeToMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
 };
 
 /**
- * Verifica os horários disponíveis para um serviço em uma data específica.
- * @param barberShopId O ID da barbearia.
- * @param serviceId O ID do serviço.
- * @param date A data para verificar a disponibilidade.
- * @returns Uma lista de horários disponíveis.
+ * Verifica os horários disponíveis para um serviço, com um barbeiro específico, em uma data.
  */
 export async function checkAvailability(
   barberShopId: string,
   serviceId: string,
+  barberId: string,
   date: Date
 ): Promise<string[]> {
   const serviceRef = doc(
@@ -102,32 +102,33 @@ export async function checkAvailability(
     serviceId
   );
   const serviceSnap = await getDoc(serviceRef);
-  if (!serviceSnap.exists()) {
-    throw new Error('Serviço não encontrado');
-  }
-  const service = ServiceSchema.parse({
-    id: serviceSnap.id,
-    ...serviceSnap.data(),
-  });
+  if (!serviceSnap.exists()) throw new Error('Serviço não encontrado');
+  const service = ServiceSchema.parse({ id: serviceSnap.id, ...serviceSnap.data() });
   const serviceDuration = service.duration;
 
-  const barbers = await getBarbers(barberShopId);
-  const activeBarbers = barbers.filter((b) => b.isActive && b.availability);
+  const barberRef = doc(
+    db,
+    'barbershops',
+    barberShopId,
+    'barbers',
+    barberId
+  );
+  const barberSnap = await getDoc(barberRef);
+  if (!barberSnap.exists() || !barberSnap.data().isActive || !barberSnap.data().availability) {
+    return []; // Retorna vazio se o barbeiro não for válido ou não tiver disponibilidade
+  }
+  const barber = BarberSchema.parse({ id: barberSnap.id, ...barberSnap.data() });
 
-  // Busca todos os agendamentos para a data selecionada
+  // Busca agendamentos apenas para a data e barbeiro selecionados
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const appointmentsCol = collection(
-    db,
-    'barbershops',
-    barberShopId,
-    'appointments'
-  );
+  const appointmentsCol = collection(db, 'barbershops', barberShopId, 'appointments');
   const q = query(
     appointmentsCol,
+    where('barberId', '==', barberId),
     where('startTime', '>=', Timestamp.fromDate(startOfDay)),
     where('startTime', '<=', Timestamp.fromDate(endOfDay))
   );
@@ -139,49 +140,35 @@ export async function checkAvailability(
   const availableSlots: Set<string> = new Set();
   const dayOfWeek = date.toLocaleString('pt-BR', { weekday: 'long' });
 
-  for (const barber of activeBarbers) {
-    if (
-      !barber
-        .availability!.workDays.map((d) => d.toLowerCase())
-        .includes(dayOfWeek.toLowerCase())
-    ) {
-      continue;
-    }
+  if (!barber.availability!.workDays.map(d => d.toLowerCase()).includes(dayOfWeek.toLowerCase())) {
+    return []; // Barbeiro não trabalha neste dia
+  }
 
-    const workStart = timeToMinutes(barber.availability!.workHours.start);
-    const workEnd = timeToMinutes(barber.availability!.workHours.end);
+  const workStart = timeToMinutes(barber.availability!.workHours.start);
+  const workEnd = timeToMinutes(barber.availability!.workHours.end);
 
-    // Gera slots de 15 em 15 minutos
-    for (let t = workStart; t < workEnd; t += 15) {
-      const slotStart = t;
-      const slotEnd = t + serviceDuration;
+  for (let t = workStart; t < workEnd; t += 15) {
+    const slotStart = t;
+    const slotEnd = t + serviceDuration;
 
-      // Verifica se o slot termina depois do expediente
-      if (slotEnd > workEnd) continue;
+    if (slotEnd > workEnd) continue;
 
-      // Verifica se o slot está dentro de um intervalo
-      const isInBreak = barber.availability!.breaks.some(
-        (b) =>
-          slotStart < timeToMinutes(b.end) && slotEnd > timeToMinutes(b.start)
-      );
-      if (isInBreak) continue;
+    const isInBreak = barber.availability!.breaks.some(
+      (b) =>
+        slotStart < timeToMinutes(b.end) && slotEnd > timeToMinutes(b.start)
+    );
+    if (isInBreak) continue;
 
-      // Verifica se o slot conflita com agendamentos existentes para este barbeiro
-      const isBooked = existingAppointments.some(
-        (apt) =>
-          apt.barberId === barber.id &&
-          slotStart < apt.endTime.getHours() * 60 + apt.endTime.getMinutes() &&
-          slotEnd > apt.startTime.getHours() * 60 + apt.startTime.getMinutes()
-      );
-      if (isBooked) continue;
+    const isBooked = existingAppointments.some(
+      (apt) =>
+        slotStart < apt.endTime.getHours() * 60 + apt.endTime.getMinutes() &&
+        slotEnd > apt.startTime.getHours() * 60 + apt.startTime.getMinutes()
+    );
+    if (isBooked) continue;
 
-      // Se o slot estiver livre, adiciona à lista
-      const hour = Math.floor(slotStart / 60)
-        .toString()
-        .padStart(2, '0');
-      const minute = (slotStart % 60).toString().padStart(2, '0');
-      availableSlots.add(`${hour}:${minute}`);
-    }
+    const hour = Math.floor(slotStart / 60).toString().padStart(2, '0');
+    const minute = (slotStart % 60).toString().padStart(2, '0');
+    availableSlots.add(`${hour}:${minute}`);
   }
 
   return Array.from(availableSlots).sort();
@@ -189,8 +176,6 @@ export async function checkAvailability(
 
 /**
  * Cria um novo agendamento.
- * @param appointmentData Os dados do agendamento.
- * @returns O ID do novo agendamento.
  */
 export async function scheduleAppointment(
   appointmentData: Omit<Appointment, 'id' | 'status'>

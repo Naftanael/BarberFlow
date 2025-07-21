@@ -1,21 +1,24 @@
-// src/components/chat/OptionPicker.tsx
+// src/components/chat/option-picker.tsx
 'use client';
 
 import { Button } from '@/components/ui/button';
 
 interface OptionPickerProps {
   options: string[];
-  onSelect: (option: string) => void;
+  onOptionClick: (option: string) => void;
 }
 
-export const OptionPicker = ({ options, onSelect }: OptionPickerProps) => (
-  <div className="mt-3 flex flex-col gap-2 max-w-[85%] mr-auto">
-    {options.map((option, i) => (
+export const OptionPicker = ({
+  options,
+  onOptionClick,
+}: OptionPickerProps) => (
+  <div className="flex flex-col gap-2 pt-2">
+    {options.map((option) => (
       <Button
-        key={i}
-        onClick={() => onSelect(option)}
+        key={option}
+        onClick={() => onOptionClick(option)}
         variant="outline"
-        className="w-full h-auto py-2 bg-transparent border-copper text-copper hover:bg-copper hover:text-white font-headline uppercase tracking-wider text-xs"
+        className="w-full justify-start rounded-md border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground font-headline uppercase tracking-wider"
       >
         {option}
       </Button>

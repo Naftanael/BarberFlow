@@ -4,10 +4,9 @@
 import { useRef, useEffect } from 'react';
 import { MessageBubble } from './message-bubble';
 import { OptionPicker } from './option-picker';
-import { TypingIndicator } from './typing-indicator';
 import type { ReactNode } from 'react';
 
-// Estrutura da Mensagem (padrão)
+// Estrutura da Mensagem
 export interface Message {
   id: string;
   sender: 'user' | 'bot';
@@ -36,10 +35,13 @@ export const MessageList = ({
   const renderMessageContent = (message: Message) => {
     if (Array.isArray(message.options)) {
       return (
-        <OptionPicker
-          options={message.options}
-          onSelect={onOptionSelect}
-        />
+        <>
+          <p className="mb-2">{message.text}</p>
+          <OptionPicker
+            options={message.options}
+            onOptionClick={onOptionSelect}
+          />
+        </>
       );
     }
     // Renderiza o nó React (como o Calendário) ou o texto simples
@@ -47,10 +49,10 @@ export const MessageList = ({
   };
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-copper/70 scrollbar-track-wood-dark/50">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary/70 scrollbar-track-secondary">
       {messages.map((message) => (
         <MessageBubble key={message.id} sender={message.sender}>
-          {renderMessageContent(message)}
+          {renderMessage-content(message)}
         </MessageBubble>
       ))}
       {isTyping && <MessageBubble sender="bot" isTyping />}

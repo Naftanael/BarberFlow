@@ -38,7 +38,7 @@ export const MessageList = ({
       return (
         <OptionPicker
           options={message.options}
-          onOptionClick={onOptionSelect}
+          onSelect={onOptionSelect}
         />
       );
     }

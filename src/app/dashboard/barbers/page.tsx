@@ -1,7 +1,7 @@
 // src/app/dashboard/barbers/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
@@ -27,27 +27,42 @@ import { addDoc, collection, getDocs } from 'firebase/firestore';
 
 const BARBERSHOP_ID = 'barbershop-1';
 
-async function getBarbers(): Promise<Barber[]> {
-  const barbersCol = collection(db, 'barbershops', BARBERSHOP_ID, 'barbers');
-  const barbersSnapshot = await getDocs(barbersCol);
-  const barbersList = barbersSnapshot.docs.map((doc) => ({
-    ...doc.data(),
-    id: doc.id,
-  }));
-  return BarberSchema.array().parse(barbersList);
-}
-
-export default async function BarbersPage() {
-  const barbers = await getBarbers();
-
-  return <BarbersView initialBarbers={barbers} />;
-}
-
-function BarbersView({ initialBarbers }: { initialBarbers: Barber[] }) {
+export default function BarbersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [barbers, setBarbers] = useState(initialBarbers);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [newBarberName, setNewBarberName] = useState('');
+
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        const barbersCol = collection(
+          db,
+          'barbershops',
+          BARBERSHOP_ID,
+          'barbers'
+        );
+        const barbersSnapshot = await getDocs(barbersCol);
+        const barbersList = barbersSnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+        setBarbers(BarberSchema.array().parse(barbersList));
+      } catch (error) {
+        console.error('Erro ao buscar barbeiros:', error);
+        toast({
+          title: 'Erro!',
+          description: 'Não foi possível carregar a lista de barbeiros.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBarbers();
+  }, [toast]);
 
   const handleSave = async () => {
     try {
@@ -177,59 +192,68 @@ function BarbersView({ initialBarbers }: { initialBarbers: Barber[] }) {
           </DialogContent>
         </Dialog>
       </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {barbers.map((barber) => (
-          <Card
-            key={barber.id}
-            className="flex flex-col text-center hover:border-primary/50 transition-colors"
-          >
-            <CardHeader className="items-center">
-              <Avatar className="h-32 w-32 border-4 border-primary/50">
-                <AvatarImage asChild src={barber.avatarUrl || ''}>
-                  <Image
-                    src={barber.avatarUrl || 'https://placehold.co/128x128.png'}
-                    alt={barber.name}
-                    width={128}
-                    height={128}
-                    data-ai-hint={'professional barber'}
-                  />
-                </AvatarImage>
-                <AvatarFallback>{barber.name.substring(0, 2)}</AvatarFallback>
-              </Avatar>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col items-center justify-center">
-              <CardTitle className="font-headline tracking-wider text-2xl">
-                {barber.name}
-              </CardTitle>
-              <Badge
-                variant={barber.isActive ? 'default' : 'secondary'}
-                className="mt-2"
-              >
-                {barber.isActive ? 'Ativo' : 'Inativo'}
-              </Badge>
-            </CardContent>
-            <div className="flex justify-center gap-2 p-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="font-headline tracking-wide w-full"
-                onClick={handleEdit}
-              >
-                Editar
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="font-headline tracking-wide w-full"
-                onClick={handleDelete}
-              >
-                Deletar
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {barbers.map((barber) => (
+            <Card
+              key={barber.id}
+              className="flex flex-col text-center hover:border-primary/50 transition-colors"
+            >
+              <CardHeader className="items-center">
+                <Avatar className="h-32 w-32 border-4 border-primary/50">
+                  <AvatarImage asChild src={barber.avatarUrl || ''}>
+                    <Image
+                      src={
+                        barber.avatarUrl || 'https://placehold.co/128x128.png'
+                      }
+                      alt={barber.name}
+                      width={128}
+                      height={128}
+                      data-ai-hint={'professional barber'}
+                    />
+                  </AvatarImage>
+                  <AvatarFallback>
+                    {barber.name.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col items-center justify-center">
+                <CardTitle className="font-headline tracking-wider text-2xl">
+                  {barber.name}
+                </CardTitle>
+                <Badge
+                  variant={barber.isActive ? 'default' : 'secondary'}
+                  className="mt-2"
+                >
+                  {barber.isActive ? 'Ativo' : 'Inativo'}
+                </Badge>
+              </CardContent>
+              <div className="flex justify-center gap-2 p-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-headline tracking-wide w-full"
+                  onClick={handleEdit}
+                >
+                  Editar
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="font-headline tracking-wide w-full"
+                  onClick={handleDelete}
+                >
+                  Deletar
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

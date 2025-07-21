@@ -8,7 +8,10 @@ import { ChatHeader } from './chat/chat-header';
 import { MessageList, Message } from './chat/message-list';
 import { ChatInput } from './chat/chat-input';
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
+const BARBERSHOP_ID = 'barbershop-1';
 const BARBERSHOP_NAME = 'BarberFlow';
 
 const ConversationState = {
@@ -35,31 +38,85 @@ export default function ChatWidget({
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(startOpen);
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Começa carregando
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationState, setConversationState] = useState(
     ConversationState.GREETING
   );
 
   useEffect(() => {
-    // Check for opening hours
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
-    const hour = now.getHours();
-    const isClosed = dayOfWeek === 0 || hour < 9 || hour >= 18;
+    const fetchAvailabilityAndCheckHours = async () => {
+      try {
+        const availabilityRef = doc(
+          db,
+          'barbershops',
+          BARBERSHOP_ID,
+          'availability',
+          'default' // Assumindo que a disponibilidade padrão tem o id 'default'
+        );
+        const docSnap = await getDoc(availabilityRef);
 
-    if (isClosed) {
-      setMessages([
-        {
-          from: 'bot',
-          text: `Olá! Nosso horário de funcionamento é de Segunda a Sábado, das 9h às 18h. No momento estamos fechados.`,
-        },
-      ]);
-      setConversationState(ConversationState.CLOSED);
-    } else {
-      setMessages([initialMessage]);
-      setConversationState(ConversationState.ASKING_NAME);
-    }
+        let isClosed = true; // Começa como fechado por padrão
+        let closedMessage = `Olá! No momento estamos fechados. Por favor, verifique nossos horários de funcionamento.`;
+
+        if (docSnap.exists()) {
+          const availabilityData = docSnap.data();
+          const now = new Date();
+          const dayOfWeek = now.getDay(); // 0 = Domingo
+          const currentHour = now.getHours() + now.getMinutes() / 60;
+
+          const today = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+          ][dayOfWeek];
+
+          const schedule = availabilityData.days[today];
+
+          if (schedule && schedule.isOpen) {
+            const openTime =
+              parseInt(schedule.open.split(':')[0]) +
+              parseInt(schedule.open.split(':')[1]) / 60;
+            const closeTime =
+              parseInt(schedule.close.split(':')[0]) +
+              parseInt(schedule.close.split(':')[1]) / 60;
+
+            if (currentHour >= openTime && currentHour < closeTime) {
+              isClosed = false;
+            } else {
+              closedMessage = `Olá! Hoje nosso horário é das ${schedule.open} às ${schedule.close}. No momento estamos fechados.`;
+            }
+          } else {
+            closedMessage = `Olá! Hoje não estamos abertos.`;
+          }
+        }
+
+        if (isClosed) {
+          setMessages([{ from: 'bot', text: closedMessage }]);
+          setConversationState(ConversationState.CLOSED);
+        } else {
+          setMessages([initialMessage]);
+          setConversationState(ConversationState.ASKING_NAME);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar disponibilidade:', error);
+        setMessages([
+          {
+            from: 'bot',
+            text: 'Desculpe, estou com problemas para verificar nossos horários. Por favor, tente novamente mais tarde.',
+          },
+        ]);
+        setConversationState(ConversationState.CLOSED);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAvailabilityAndCheckHours();
   }, []);
 
   const addMessage = (
@@ -117,7 +174,7 @@ export default function ChatWidget({
         break;
 
       case ConversationState.SELECTING_SERVICE:
-        // Future logic for service selection
+        // Lógica futura para seleção de serviço
         break;
     }
   };
@@ -153,8 +210,8 @@ export default function ChatWidget({
       />
       <ChatInput
         onSend={handleUserInput}
-        isLoading={isLoading}
-        isTyping={isTyping}
+        isLoading={isLoading || isTyping}
+        disabled={isLoading}
       />
     </div>
   );

@@ -1,38 +1,22 @@
+// src/app/dashboard/page.tsx
 'use client';
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { DollarSign, Calendar, Users, Percent, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Share2, Users, Scissors, DollarSign } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { ClientOnly } from '@/components/client-only';
 
-const chartData = [
-  { month: 'Jan', revenue: 1860.5 },
-  { month: 'Fev', revenue: 3050.75 },
-  { month: 'Mar', revenue: 2390.0 },
-  { month: 'Abr', revenue: 4300.2 },
-  { month: 'Mai', revenue: 2490.0 },
-  { month: 'Jun', revenue: 4890.9 },
+const data = [
+  { name: 'Seg', faturamento: 400 },
+  { name: 'Ter', faturamento: 300 },
+  { name: 'Qua', faturamento: 600 },
+  { name: 'Qui', faturamento: 800 },
+  { name: 'Sex', faturamento: 700 },
+  { name: 'Sáb', faturamento: 900 },
 ];
-
-const chartConfig = {
-  revenue: {
-    label: 'Receita',
-    color: 'hsl(var(--primary))',
-  },
-};
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -46,16 +30,27 @@ export default function Dashboard() {
   const copyToClipboard = () => {
     if (!isClient) return;
     const chatUrl = `${window.location.origin}/agendar`;
-    navigator.clipboard.writeText(chatUrl).then(
-      () => {
-        toast({
-          title: 'Sucesso!',
-          description: 'Link do chatbot copiado para a área de transferência.',
-        });
-        setButtonText('Copiado!');
-        setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
-      },
-      (err) => {
+
+    const fallbackCopy = (text: string) => {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed'; // Avoid scrolling to bottom
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          toast({
+            title: 'Sucesso!',
+            description: 'Link do chatbot copiado para a área de transferência.',
+          });
+          setButtonText('Copiado!');
+          setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
+        } else {
+          throw new Error('Copy command was not successful');
+        }
+      } catch (err) {
         toast({
           title: 'Erro!',
           description: 'Não foi possível copiar o link.',
@@ -63,117 +58,106 @@ export default function Dashboard() {
         });
         console.error('Could not copy text: ', err);
       }
-    );
+      document.body.removeChild(textArea);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(chatUrl).then(
+        () => {
+          toast({
+            title: 'Sucesso!',
+            description: 'Link do chatbot copiado para a área de transferência.',
+          });
+          setButtonText('Copiado!');
+          setTimeout(() => setButtonText('Copiar Link do Chat'), 2000);
+        },
+        () => {
+          fallbackCopy(chatUrl);
+        }
+      );
+    } else {
+      fallbackCopy(chatUrl);
+    }
   };
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-headline tracking-wider text-foreground">
-          Painel
-        </h1>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-headline tracking-wider text-foreground">
+            Painel Principal
+          </h1>
+          <p className="text-muted-foreground">
+            Visão geral do desempenho da sua barbearia.
+          </p>
+        </div>
         <Button
-          onClick={copyToClipboard}
-          disabled={!isClient}
-          variant="outline"
           className="font-headline tracking-wider"
+          onClick={copyToClipboard}
         >
-          <Copy className="mr-2 h-4 w-4" />
+          <Share2 className="mr-2 h-4 w-4" />
           {buttonText}
         </Button>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-body">
-              Receita Total
+            <CardTitle className="text-sm font-medium">
+              Faturamento Total
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ 18.981,35</div>
+            <div className="text-2xl font-bold">R$ 45.231,89</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% do último mês
+              +20.1% em relação ao mês passado
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-body">
-              Agendamentos
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+235</div>
-            <p className="text-xs text-muted-foreground">
-              +180.1% do último mês
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-body">
+            <CardTitle className="text-sm font-medium">
               Novos Clientes
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+42</div>
-            <p className="text-xs text-muted-foreground">+19% do último mês</p>
+            <div className="text-2xl font-bold">+235</div>
+            <p className="text-xs text-muted-foreground">
+              +180.1% em relação ao mês passado
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-body">
-              Taxa de Ocupação
+            <CardTitle className="text-sm font-medium">
+              Serviços Realizados
             </CardTitle>
-            <Percent className="h-4 w-4 text-muted-foreground" />
+            <Scissors className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85%</div>
+            <div className="text-2xl font-bold">+12,234</div>
             <p className="text-xs text-muted-foreground">
-              +2% da última semana
+              +19% em relação ao mês passado
             </p>
           </CardContent>
         </Card>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline tracking-wider">
-            Visão Geral da Receita
-          </CardTitle>
-          <CardDescription>Receita dos últimos 6 meses</CardDescription>
+          <CardTitle>Faturamento da Semana</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-[300px] w-full">
-            <BarChart
-              accessibilityLayer
-              data={chartData}
-              margin={{ top: 20, right: 20, bottom: 5, left: 0 }}
-            >
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tickFormatter={(value) =>
-                  `R$${typeof value === 'number' ? value / 1000 : 0}k`
-                }
-              />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="dot" />}
-              />
-              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
+          <ClientOnly>
+            <BarChart width={600} height={300} data={data}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="faturamento" fill="#8884d8" />
             </BarChart>
-          </ChartContainer>
+          </ClientOnly>
         </CardContent>
       </Card>
     </div>

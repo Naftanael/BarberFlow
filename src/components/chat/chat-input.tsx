@@ -1,7 +1,7 @@
 // src/components/chat/chat-input.tsx
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, KeyboardEvent } from 'react';
 import { Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,10 +25,10 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as any);
+      handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
     }
   };
 
@@ -46,10 +46,7 @@ export const ChatInput = ({ onSend, isLoading, disabled }: ChatInputProps) => {
 
   return (
     <footer className="p-4 border-t border-white/10 bg-[#212121]/80 backdrop-blur-sm shrink-0 z-10">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full items-end space-x-2"
-      >
+      <form onSubmit={handleSubmit} className="flex w-full items-end space-x-2">
         <Textarea
           ref={textareaRef}
           placeholder={disabled ? 'Aguarde...' : 'Digite sua mensagem...'}

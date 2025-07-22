@@ -10,7 +10,6 @@ import {
   addDoc,
   getDoc,
   deleteDoc,
-  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase'; // Importa a instância do DB já inicializada
 import {
@@ -80,6 +79,30 @@ export async function getBarbers(barberShopId: string): Promise<Barber[]> {
     ...doc.data(),
   }));
   return z.array(BarberSchema).parse(barbersList);
+}
+
+export async function addBarber(
+  barberShopId: string,
+  barberData: Omit<Barber, 'id'>
+): Promise<string> {
+  const validatedData = BarberSchema.omit({ id: true }).parse(barberData);
+  const barbersCol = collection(db, 'barbershops', barberShopId, 'barbers');
+  const docRef = await addDoc(barbersCol, validatedData);
+  return docRef.id;
+}
+
+export async function updateBarber(
+  barberShopId: string,
+  barberId: string,
+  barberData: Partial<Omit<Barber, 'id'>>
+) {
+  const barberRef = doc(db, 'barbershops', barberShopId, 'barbers', barberId);
+  await updateDoc(barberRef, barberData);
+}
+
+export async function deleteBarber(barberShopId: string, barberId: string) {
+  const barberRef = doc(db, 'barbershops', barberShopId, 'barbers', barberId);
+  await deleteDoc(barberRef);
 }
 
 export async function updateBarberAvailability(

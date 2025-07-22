@@ -3,7 +3,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, CheckCircle2, MoreVertical, Loader2 } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  MoreVertical,
+  Loader2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +24,11 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getBarbers, getAppointmentsByDate, getServices } from '@/lib/firestore';
+import {
+  getBarbers,
+  getAppointmentsByDate,
+  getServices,
+} from '@/lib/firestore';
 import { Barber, Appointment, Service } from '@/lib/schemas';
 import { useToast } from '@/hooks/use-toast';
 import { ClientOnly } from '@/components/client-only';
@@ -48,16 +57,17 @@ export default function AgendaPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [fetchedBarbers, fetchedAppointments, fetchedServices] = await Promise.all([
-          getBarbers(BARBERSHOP_ID),
-          getAppointmentsByDate(BARBERSHOP_ID, selectedDate),
-          getServices(BARBERSHOP_ID),
-        ]);
-        setBarbers(fetchedBarbers.filter(b => b.isActive));
+        const [fetchedBarbers, fetchedAppointments, fetchedServices] =
+          await Promise.all([
+            getBarbers(BARBERSHOP_ID),
+            getAppointmentsByDate(BARBERSHOP_ID, selectedDate),
+            getServices(BARBERSHOP_ID),
+          ]);
+        setBarbers(fetchedBarbers.filter((b) => b.isActive));
         setAppointments(fetchedAppointments);
         setServices(fetchedServices);
       } catch (error) {
-        console.error("Erro ao buscar dados da agenda:", error);
+        console.error('Erro ao buscar dados da agenda:', error);
         toast({
           title: 'Erro',
           description: 'Não foi possível carregar os dados da agenda.',
@@ -71,16 +81,23 @@ export default function AgendaPage() {
   }, [selectedDate, toast]);
 
   const servicesMap = useMemo(() => {
-    return services.reduce((acc, service) => {
-      acc[service.id!] = service.name;
-      return acc;
-    }, {} as Record<string, string>);
+    return services.reduce(
+      (acc, service) => {
+        acc[service.id!] = service.name;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
   }, [services]);
 
-  const durationToGridRows = (durationMinutes: number) => Math.ceil(durationMinutes / 15);
+  const durationToGridRows = (durationMinutes: number) =>
+    Math.ceil(durationMinutes / 15);
 
   const startTimeToGridRow = (startTime: Date) => {
-    const minutesFrom8AM = (startTime.getHours() * 60 + startTime.getMinutes()) - timeToMinutes('08:00');
+    const minutesFrom8AM =
+      startTime.getHours() * 60 +
+      startTime.getMinutes() -
+      timeToMinutes('08:00');
     return Math.floor(minutesFrom8AM / 15) + 2; // +2 porque a grade começa na linha 2
   };
 
@@ -130,10 +147,16 @@ export default function AgendaPage() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_repeat(var(--num-barbers,1),1fr)] gap-x-4" style={{ '--num-barbers': barbers.length } as React.CSSProperties}>
+            <div
+              className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_repeat(var(--num-barbers,1),1fr)] gap-x-4"
+              style={{ '--num-barbers': barbers.length } as React.CSSProperties}
+            >
               <div className="row-start-2 text-right">
                 {timeSlots.map((time) => (
-                  <div key={time} className="h-24 flex items-start justify-end pt-1 pr-4">
+                  <div
+                    key={time}
+                    className="h-24 flex items-start justify-end pt-1 pr-4"
+                  >
                     <span className="text-sm font-body text-muted-foreground -translate-y-2">
                       {time}
                     </span>
@@ -146,14 +169,22 @@ export default function AgendaPage() {
                   <div className="text-center py-2 font-headline tracking-wider text-lg text-primary sticky top-0 bg-card z-10">
                     {barber.name}
                   </div>
-                  <div className="relative grid grid-cols-1" style={{ gridTemplateRows: 'repeat(48, 1rem)' }}>
+                  <div
+                    className="relative grid grid-cols-1"
+                    style={{ gridTemplateRows: 'repeat(48, 1rem)' }}
+                  >
                     {Array.from({ length: 48 }).map((_, i) => (
-                      <div key={i} className="h-4 border-t border-dashed border-border"></div>
+                      <div
+                        key={i}
+                        className="h-4 border-t border-dashed border-border"
+                      ></div>
                     ))}
                     {appointments
                       .filter((apt) => apt.barberId === barber.id)
                       .map((apt) => {
-                        const duration = (apt.endTime.getTime() - apt.startTime.getTime()) / 60000;
+                        const duration =
+                          (apt.endTime.getTime() - apt.startTime.getTime()) /
+                          60000;
                         return (
                           <div
                             key={apt.id}
@@ -171,8 +202,12 @@ export default function AgendaPage() {
                                   : 'bg-primary/80 text-primary-foreground'
                               )}
                             >
-                              <p className="font-bold font-body">{apt.clientName}</p>
-                              <p className="text-primary-foreground/80">{servicesMap[apt.serviceId] || 'Serviço'}</p>
+                              <p className="font-bold font-body">
+                                {apt.clientName}
+                              </p>
+                              <p className="text-primary-foreground/80">
+                                {servicesMap[apt.serviceId] || 'Serviço'}
+                              </p>
                               <p className="mt-auto text-end text-xs">
                                 {format(apt.startTime, 'HH:mm')}
                               </p>

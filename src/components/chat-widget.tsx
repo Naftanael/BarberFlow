@@ -18,6 +18,7 @@ import { Service, Barber } from '@/lib/schemas';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { TimePicker } from './chat/time-picker';
 
 const BARBERSHOP_ID = 'barbershop-1';
 const BARBERSHOP_NAME = 'BarberFlow';
@@ -80,7 +81,7 @@ export default function ChatWidget({
   const addMessage = (
     sender: 'user' | 'bot',
     text: string,
-    options?: React.ReactNode | string[]
+    options?: React.ReactNode
   ) => {
     setMessages((prev) => [
       ...prev,
@@ -162,7 +163,6 @@ export default function ChatWidget({
       }
 
       case ConversationState.SELECTING_DATE: {
-        // CORREÇÃO: Garante que a data seja interpretada no fuso horário local
         const [year, month, day] = input.split('-').map(Number);
         const selectedDate = new Date(year, month - 1, day);
 
@@ -175,7 +175,7 @@ export default function ChatWidget({
           const availableTimes = await checkAvailability(BARBERSHOP_ID, service!.id!, barber!.id!, selectedDate);
           
           if (availableTimes.length > 0) {
-            addMessage('bot', `Encontrei estes horários para ${format(selectedDate, 'dd/MM')}:`, availableTimes);
+            addMessage('bot', `Encontrei estes horários para ${format(selectedDate, 'dd/MM')}:`, <TimePicker times={availableTimes} onTimeSelect={handleUserInput} />);
             setConversationState(ConversationState.SELECTING_TIME);
           } else {
             addMessage('bot', 'Desculpe, não há horários disponíveis para esta data.');

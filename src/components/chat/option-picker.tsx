@@ -8,10 +8,7 @@ interface OptionPickerProps {
   onOptionClick: (option: string) => void;
 }
 
-export const OptionPicker = ({
-  options,
-  onOptionClick,
-}: OptionPickerProps) => (
+export const OptionPicker = ({ options, onOptionClick }: OptionPickerProps) => (
   <div className="flex flex-col gap-2 pt-2">
     {options.map((option) => (
       <Button
